@@ -136,7 +136,7 @@ func (a *api) CreateDocument(ctx context.Context, req *fileserverV1.CreateDocume
 	}
 
 	// Сохраняем бизнес-сущность
-	if _, err := a.docsService.CreateDocument(ctx, doc); err != nil {
+	if _, err := a.service.CreateDocument(ctx, doc); err != nil {
 		return &fileserverV1.InternalServerError{
 			Error: fileserverV1.InternalServerErrorError{
 				Code: 500,

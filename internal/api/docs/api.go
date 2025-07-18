@@ -10,11 +10,11 @@ var _ fileserverV1.Handler = (*api)(nil)
 type api struct {
 	fileserverV1.UnimplementedHandler
 
-	docsService service.FileServerService
+	service service.FileServerService
 }
 
-func NewAPI(docsService service.FileServerService) *api {
+func NewAPI(service service.FileServerService) *api {
 	return &api{
-		docsService: docsService,
+		service: service,
 	}
 }

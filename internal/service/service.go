@@ -16,10 +16,7 @@ type FileServerService interface {
 
 	// Получение документов для пользователя
 	GetDocumentsForUser(ctx context.Context, requestUserID, targetUserID string) ([]model.Document, error)
-}
 
-// AuthService - интерфейс сервиса авторизации
-type AuthService interface {
 	// Регистрация и аутентификация
 	RegisterUser(ctx context.Context, adminToken, login, password string) (model.User, error)
 	AuthenticateUser(ctx context.Context, login, password string) (string, error)
