@@ -15,6 +15,7 @@ import (
 	fileserverAPI "github.com/NarthurN/FileServerService/internal/api/docs"
 	"github.com/NarthurN/FileServerService/internal/config"
 	"github.com/NarthurN/FileServerService/internal/database"
+	"github.com/NarthurN/FileServerService/internal/database/migrator"
 	fileserverRepo "github.com/NarthurN/FileServerService/internal/repository/doc"
 	fileserverService "github.com/NarthurN/FileServerService/internal/service/docs"
 	fileserverV1 "github.com/NarthurN/FileServerService/pkg/generated/api/fileserver/v1"
@@ -23,22 +24,46 @@ import (
 )
 
 func main() {
+	// Контекст для миграций
+	ctx := context.Background()
+
+	// Загрузка конфигурации
 	cfg, err := config.Load()
 	if err != nil {
 		log.Printf("🚨 ошибка загрузки конфигурации: %v", err)
 		return
 	}
 
-	db, err := database.NewPool(cfg.Database)
+	// Создание SQL соединения
+	sqlDB, err := database.NewSQLDB(cfg.Database)
+    if err != nil {
+        log.Fatal("🚨 ошибка создания SQL соединения:", err)
+    }
+    defer sqlDB.Close()
+
+	// Применение миграций
+	migrator := migrator.NewMigrator(sqlDB)
+    if err := migrator.Up(ctx); err != nil {
+        log.Fatal("🚨 ошибка применения миграций:", err)
+    }
+
+	// Создание пула соединений
+	pool, err := database.NewPool(cfg.Database)
 	if err != nil {
 		log.Printf("🚨 ошибка создания пула соединений: %v", err)
 		return
 	}
 
-	repo := fileserverRepo.NewRepository(db)
+	// Создание репозитория
+	repo := fileserverRepo.NewRepository(pool)
+
+	// Создание сервиса
 	service := fileserverService.NewService(repo)
+
+	// Создание API
 	api := fileserverAPI.NewAPI(service)
 
+	// Создание сервера
 	fileServer, err := fileserverV1.NewServer(api, nil)
 	if err != nil {
 		log.Printf("🚨 ошибка создания сервера: %v", err)
@@ -49,30 +74,32 @@ func main() {
 
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	r.Use(middleware.Timeout(60 * time.Second))
 
 	r.Mount("/api", fileServer)
 
-	// Файл сервер для документации
-	swaggerServer := http.FileServer(http.Dir("./pkg/openapi/bundles"))
+    // Статические файлы для загруженных документов
+    r.Handle("/uploads/*", http.StripPrefix("/uploads", http.FileServer(http.Dir("./bin/storage"))))
 
-	httpMux := http.NewServeMux()
-	httpMux.Handle("/api/v1/", http.StripPrefix("/api/v1", r))
+    // Swagger UI
+	swaggerFS := http.FileServer(http.Dir("./pkg/openapi/bundles"))
+    r.Handle("/swagger-ui.html", swaggerFS)
+    r.Handle("/docs.openapi.bundle.yaml", swaggerFS)
+    r.Handle("/swagger/*", http.StripPrefix("/swagger", swaggerFS))
 
-	httpMux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/" {
-			http.Redirect(w, r, "/swagger-ui.html", http.StatusMovedPermanently)
-			return
-		}
-		swaggerServer.ServeHTTP(w, r)
-	}))
+    // Главная страница
+    r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+        http.Redirect(w, r, "/swagger-ui.html", http.StatusMovedPermanently)
+    })
 
-	server := &http.Server{
-		Addr:              net.JoinHostPort(cfg.Server.Host, strconv.Itoa(cfg.Server.Port)),
-		Handler:           httpMux,
-		ReadHeaderTimeout: 5 * time.Second,
-		WriteTimeout:      10 * time.Second,
-		IdleTimeout:       15 * time.Second,
-	}
+    server := &http.Server{
+        Addr:              net.JoinHostPort(cfg.Server.Host, strconv.Itoa(cfg.Server.Port)),
+        Handler:           r, // Используем chi router напрямую
+        ReadHeaderTimeout: 10 * time.Second,
+        WriteTimeout:      60 * time.Second,  // Для файлов
+        IdleTimeout:       120 * time.Second,
+        MaxHeaderBytes:    32 << 20, // 32MB для файлов
+    }
 
 	go func() {
 		log.Printf("🚀 HTTP сервер запущен на порту %s", strconv.Itoa(cfg.Server.Port))
