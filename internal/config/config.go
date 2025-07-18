@@ -4,15 +4,19 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/joho/godotenv"
 )
 
+// Все настройки
 type Config struct {
-	Database DatabaseConfig
-	Server   ServerConfig
+	Database DatabaseConfig // База данных
+	Server   ServerConfig   // Сервер
+	Auth     AuthConfig     // Авторизация админа
 }
 
+// Настройки базы данных
 type DatabaseConfig struct {
 	Host     string
 	Port     int
@@ -22,9 +26,17 @@ type DatabaseConfig struct {
 	SSLMode  string
 }
 
+// Настройки сервера
 type ServerConfig struct {
 	Host string
 	Port int
+}
+
+// Настройки авторизации для админа
+type AuthConfig struct {
+	AdminToken    string        // Фиксированный токен администратора для регистрации
+	TokenLifetime time.Duration // Время жизни пользовательских токенов
+	JWTSecret     string        // Секрет для JWT
 }
 
 func Load() (*Config, error) {
@@ -46,6 +58,11 @@ func Load() (*Config, error) {
 			Host: getEnv("SERVER_HOST", "localhost"),
 			Port: getEnvInt("SERVER_PORT", 8080),
 		},
+		Auth: AuthConfig{
+			AdminToken:    getEnv("ADMIN_TOKEN", "admin-secret-token-123456"),
+			TokenLifetime: getTokenLifetime(),
+			JWTSecret:     getEnv("JWT_SECRET", "your-secret-key-change-in-production"),
+		},
 	}, nil
 }
 
@@ -63,4 +80,17 @@ func getEnvInt(key string, defaultValue int) int {
 		}
 	}
 	return defaultValue
+}
+
+func getTokenLifetime() time.Duration {
+	// По умолчанию 24 часа
+	defaultHours := 24
+
+	if hoursStr := os.Getenv("TOKEN_LIFETIME_HOURS"); hoursStr != "" {
+		if hours, err := strconv.Atoi(hoursStr); err == nil && hours > 0 {
+			return time.Duration(hours) * time.Hour
+		}
+	}
+
+	return time.Duration(defaultHours) * time.Hour
 }
