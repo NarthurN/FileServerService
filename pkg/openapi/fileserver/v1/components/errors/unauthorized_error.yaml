@@ -1,0 +1,17 @@
+type: object
+properties:
+  code:
+    type: integer
+    enum: [401]
+    description: Код ошибки
+    example: 401
+  message:
+    type: string
+    description: Сообщение об ошибке
+    example: "Authentication required"
+required:
+  - code
+  - message
+example:
+  code: 401
+  message: "Authentication required"

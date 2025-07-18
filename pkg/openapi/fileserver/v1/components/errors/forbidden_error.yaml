@@ -1,0 +1,17 @@
+type: object
+properties:
+  code:
+    type: integer
+    enum: [403]
+    description: Код ошибки
+    example: 403
+  message:
+    type: string
+    description: Сообщение об ошибке
+    example: "Access denied"
+required:
+  - code
+  - message
+example:
+  code: 403
+  message: "Access denied"

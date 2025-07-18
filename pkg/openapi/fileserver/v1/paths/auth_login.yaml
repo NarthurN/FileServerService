@@ -1,0 +1,38 @@
+post:
+  tags:
+    - auth
+  summary: Login user
+  description: Authenticate user and get access token
+  operationId: loginUser
+  security: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../components/login_request.yaml"
+  responses:
+    '200':
+      description: User logged in successfully
+      content:
+        application/json:
+          schema:
+            $ref: "../components/login_response.yaml"
+    '400':
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: "../components/errors/bad_request_error.yaml"
+    '401':
+      description: Invalid credentials
+      content:
+        application/json:
+          schema:
+            $ref: "../components/errors/unauthorized_error.yaml"
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: "../components/errors/internal_server_error.yaml"

@@ -1,0 +1,100 @@
+get:
+  tags:
+    - docs
+  summary: Get list of documents
+  description: Get paginated list of user documents
+  operationId: listDocuments
+  security:
+    - bearerAuth: []
+  parameters:
+    - $ref: "../params/page.yaml"
+    - $ref: "../params/per_page.yaml"
+  responses:
+    '200':
+      description: List of documents
+      content:
+        application/json:
+          schema:
+            $ref: "../components/list_documents_response.yaml"
+    '401':
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: "../components/errors/unauthorized_error.yaml"
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: "../components/errors/internal_server_error.yaml"
+head:
+  tags:
+    - docs
+  summary: Get list of documents headers
+  description: Get headers for paginated list of user documents (same as GET but without body)
+  operationId: listDocumentsHead
+  security:
+    - bearerAuth: []
+  parameters:
+    - $ref: "../params/page.yaml"
+    - $ref: "../params/per_page.yaml"
+  responses:
+    '200':
+      description: List of documents headers
+      headers:
+        X-Total-Count:
+          description: Total number of documents
+          schema:
+            type: integer
+        X-Page:
+          description: Current page number
+          schema:
+            type: integer
+        X-Per-Page:
+          description: Number of documents per page
+          schema:
+            type: integer
+    '401':
+      description: Unauthorized
+    '500':
+      description: Internal server error
+post:
+  tags:
+    - docs
+  summary: Upload a new document
+  description: Upload a new document file
+  operationId: createDocument
+  security:
+    - bearerAuth: []
+  requestBody:
+    required: true
+    content:
+      multipart/form-data:
+        schema:
+          $ref: "../components/create_document_request.yaml"
+  responses:
+    '201':
+      description: Document uploaded successfully
+      content:
+        application/json:
+          schema:
+            $ref: "../components/create_document_response.yaml"
+    '400':
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: "../components/errors/bad_request_error.yaml"
+    '401':
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: "../components/errors/unauthorized_error.yaml"
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: "../components/errors/internal_server_error.yaml"

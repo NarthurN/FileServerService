@@ -1,0 +1,16 @@
+type: object
+properties:
+  code:
+    type: integer
+    description: Код ошибки
+    example: 500
+  message:
+    type: string
+    description: Сообщение об ошибке
+    example: "An internal server error occurred"
+required:
+  - code
+  - message
+example:
+  code: 500
+  message: "An internal server error occurred"

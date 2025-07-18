@@ -1,0 +1,53 @@
+get:
+  tags:
+    - docs
+  summary: Download document by ID
+  description: Download document file by ID
+  operationId: downloadDocumentByID
+  security:
+    - bearerAuth: []
+  parameters:
+    - $ref: "../params/doc_id.yaml"
+  responses:
+    '200':
+      description: Document file
+      content:
+        application/octet-stream:
+          schema:
+            type: string
+            format: binary
+      headers:
+        Content-Disposition:
+          description: File name for download
+          schema:
+            type: string
+            example: 'attachment; filename="example.pdf"'
+        Content-Type:
+          description: File MIME type
+          schema:
+            type: string
+            example: 'application/pdf'
+    '401':
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: "../components/errors/unauthorized_error.yaml"
+    '403':
+      description: Forbidden - not document owner
+      content:
+        application/json:
+          schema:
+            $ref: "../components/errors/forbidden_error.yaml"
+    '404':
+      description: Document not found
+      content:
+        application/json:
+          schema:
+            $ref: "../components/errors/not_found_error.yaml"
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: "../components/errors/internal_server_error.yaml"

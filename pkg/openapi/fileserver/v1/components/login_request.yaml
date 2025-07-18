@@ -1,0 +1,19 @@
+type: object
+properties:
+  username:
+    type: string
+    description: Username or email for authentication
+    minLength: 3
+    maxLength: 100
+  password:
+    type: string
+    description: User password
+    minLength: 8
+    maxLength: 128
+    format: password
+required:
+  - username
+  - password
+example:
+  username: "john_doe"
+  password: "SecurePassword123!"

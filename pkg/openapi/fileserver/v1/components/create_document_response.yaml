@@ -1,0 +1,21 @@
+type: object
+properties:
+  data:
+    type: object
+    properties:
+      json:
+        type: object
+        additionalProperties: true
+        description: Document JSON data
+      file:
+        type: string
+        description: Document file name
+    required:
+      - file
+required:
+  - data
+example:
+  data:
+    json:
+      key: "value"
+    file: "photo.jpg"

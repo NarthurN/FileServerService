@@ -1,0 +1,30 @@
+type: object
+properties:
+  name:
+    type: string
+    description: Document name
+    minLength: 1
+    maxLength: 255
+  file:
+    type: boolean
+    description: Is this part a file (true for binary upload)
+  public:
+    type: boolean
+    description: Whether document is publicly accessible
+  token:
+    type: string
+    description: Security token for the upload request
+  mime:
+    type: string
+    description: MIME type of the document
+  grant:
+    type: array
+    description: List of user logins that have access
+    items:
+      type: string
+required:
+  - name
+  - file
+  - public
+  - token
+  - mime

@@ -1,0 +1,28 @@
+type: object
+properties:
+  meta:
+    $ref: "./meta.yaml"
+  json:
+    type: object
+    description: Arbitrary document JSON data
+    additionalProperties: true
+  file:
+    type: string
+    format: binary
+    description: File content
+required:
+  - meta
+  - file
+example:
+  meta:
+    name: "photo.jpg"
+    file: true
+    public: false
+    token: "sfuqwejqjoiu93e29"
+    mime: "image/jpg"
+    grant:
+      - "login1"
+      - "login2"
+  json:
+    key: "value"
+  file: (binary)

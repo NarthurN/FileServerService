@@ -1,0 +1,17 @@
+type: object
+properties:
+  code:
+    type: integer
+    enum: [400]
+    description: Код ошибки
+    example: 400
+  message:
+    type: string
+    description: Сообщение об ошибке
+    example: "Invalid request data"
+required:
+  - code
+  - message
+example:
+  code: 400
+  message: "Invalid request data"

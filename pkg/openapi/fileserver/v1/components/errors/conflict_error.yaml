@@ -1,0 +1,17 @@
+type: object
+properties:
+  code:
+    type: integer
+    enum: [409]
+    description: Код ошибки
+    example: 409
+  message:
+    type: string
+    description: Сообщение об ошибке
+    example: "Resource already exists"
+required:
+  - code
+  - message
+example:
+  code: 409
+  message: "Resource already exists"

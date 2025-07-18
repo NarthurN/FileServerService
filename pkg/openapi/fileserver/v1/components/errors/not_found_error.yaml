@@ -1,0 +1,17 @@
+type: object
+properties:
+  code:
+    type: integer
+    enum: [404]
+    description: Код ошибки
+    example: 404
+  message:
+    type: string
+    description: Сообщение об ошибке
+    example: "Resource not found"
+required:
+  - code
+  - message
+example:
+  code: 404
+  message: "Resource not found"

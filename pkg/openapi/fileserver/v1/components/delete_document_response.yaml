@@ -1,0 +1,10 @@
+type: object
+properties:
+  message:
+    type: string
+    description: Success message
+    example: "Document deleted successfully"
+required:
+  - message
+example:
+  message: "Document deleted successfully"
