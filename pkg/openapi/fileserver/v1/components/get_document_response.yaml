@@ -1,16 +1,13 @@
 type: object
 properties:
-  document:
-    $ref: "./document_dto.yaml"
+  data:
+    type: object
+    description: JSON данные документа
+    additionalProperties: true
+    example:
+      key1: "value1"
+      key2: 123
+      nested:
+        data: "example"
 required:
-  - document
-example:
-  document:
-    id: "550e8400-e29b-41d4-a716-446655440001"
-    name: "example.pdf"
-    size: 1024
-    mime_type: "application/pdf"
-    checksum: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    owner_id: "550e8400-e29b-41d4-a716-446655440000"
-    created_at: "2023-01-01T12:00:00Z"
-    updated_at: "2023-01-01T12:00:00Z"
+  - data

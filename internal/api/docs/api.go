@@ -9,7 +9,7 @@ var _ fileserverV1.Handler = (*api)(nil)
 
 type api struct {
 	fileserverV1.UnimplementedHandler
-	
+
 	docsService service.FileServerService
 }
 

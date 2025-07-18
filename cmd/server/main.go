@@ -16,7 +16,7 @@ import (
 	"github.com/NarthurN/FileServerService/internal/config"
 	"github.com/NarthurN/FileServerService/internal/database"
 	"github.com/NarthurN/FileServerService/internal/database/migrator"
-	fileserverRepo "github.com/NarthurN/FileServerService/internal/repository/doc"
+	fileserverCompositeRepo "github.com/NarthurN/FileServerService/internal/repository"
 	fileserverService "github.com/NarthurN/FileServerService/internal/service/docs"
 	fileserverV1 "github.com/NarthurN/FileServerService/pkg/generated/api/fileserver/v1"
 	"github.com/go-chi/chi/v5"
@@ -55,7 +55,7 @@ func main() {
 	}
 
 	// Создание репозитория
-	repo := fileserverRepo.NewRepository(pool)
+	repo := fileserverCompositeRepo.NewCompositeRepository(pool)
 
 	// Создание сервиса
 	service := fileserverService.NewService(repo)
@@ -64,7 +64,7 @@ func main() {
 	api := fileserverAPI.NewAPI(service)
 
 	// Создание сервера
-	fileServer, err := fileserverV1.NewServer(api, nil)
+	fileServer, err := fileserverV1.NewServer(api)
 	if err != nil {
 		log.Printf("🚨 ошибка создания сервера: %v", err)
 		return

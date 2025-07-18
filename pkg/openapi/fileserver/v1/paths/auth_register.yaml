@@ -1,10 +1,9 @@
 post:
   tags:
     - auth
-  summary: Register a new user
-  description: Create a new user account
+  summary: Регистрация нового пользователя
+  description: Создание нового пользователя с логином и паролем
   operationId: registerUser
-  security: []
   requestBody:
     required: true
     content:
@@ -12,26 +11,20 @@ post:
         schema:
           $ref: "../components/register_request.yaml"
   responses:
-    '201':
-      description: User registered successfully
+    '200':
+      description: Пользователь успешно зарегистрирован
       content:
         application/json:
           schema:
             $ref: "../components/register_response.yaml"
     '400':
-      description: Bad request
+      description: Некорректные параметры
       content:
         application/json:
           schema:
             $ref: "../components/errors/bad_request_error.yaml"
-    '409':
-      description: User already exists
-      content:
-        application/json:
-          schema:
-            $ref: "../components/errors/conflict_error.yaml"
     '500':
-      description: Internal server error
+      description: Внутренняя ошибка сервера
       content:
         application/json:
           schema:

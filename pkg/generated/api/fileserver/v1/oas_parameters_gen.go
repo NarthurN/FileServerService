@@ -7,7 +7,6 @@ import (
 	"net/url"
 
 	"github.com/go-faster/errors"
-	"github.com/google/uuid"
 
 	"github.com/ogen-go/ogen/conv"
 	"github.com/ogen-go/ogen/middleware"
@@ -16,25 +15,35 @@ import (
 	"github.com/ogen-go/ogen/validate"
 )
 
-// DeleteDocumentByIDParams is parameters of deleteDocumentByID operation.
-type DeleteDocumentByIDParams struct {
-	// Unique identifier for the document.
-	DocID uuid.UUID
+// DeleteDocumentParams is parameters of deleteDocument operation.
+type DeleteDocumentParams struct {
+	// Уникальный идентификатор документа.
+	ID string
+	// Токен авторизации.
+	Token string
 }
 
-func unpackDeleteDocumentByIDParams(packed middleware.Parameters) (params DeleteDocumentByIDParams) {
+func unpackDeleteDocumentParams(packed middleware.Parameters) (params DeleteDocumentParams) {
 	{
 		key := middleware.ParameterKey{
-			Name: "doc_id",
+			Name: "id",
 			In:   "path",
 		}
-		params.DocID = packed[key].(uuid.UUID)
+		params.ID = packed[key].(string)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "token",
+			In:   "query",
+		}
+		params.Token = packed[key].(string)
 	}
 	return params
 }
 
-func decodeDeleteDocumentByIDParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteDocumentByIDParams, _ error) {
-	// Decode path: doc_id.
+func decodeDeleteDocumentParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteDocumentParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode path: id.
 	if err := func() error {
 		param := args[0]
 		if argsEscaped {
@@ -46,7 +55,7 @@ func decodeDeleteDocumentByIDParams(args [1]string, argsEscaped bool, r *http.Re
 		}
 		if len(param) > 0 {
 			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "doc_id",
+				Param:   "id",
 				Value:   param,
 				Style:   uri.PathStyleSimple,
 				Explode: false,
@@ -58,12 +67,12 @@ func decodeDeleteDocumentByIDParams(args [1]string, argsEscaped bool, r *http.Re
 					return err
 				}
 
-				c, err := conv.ToUUID(val)
+				c, err := conv.ToString(val)
 				if err != nil {
 					return err
 				}
 
-				params.DocID = c
+				params.ID = c
 				return nil
 			}(); err != nil {
 				return err
@@ -74,33 +83,79 @@ func decodeDeleteDocumentByIDParams(args [1]string, argsEscaped bool, r *http.Re
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "doc_id",
+			Name: "id",
 			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode query: token.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "token",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Token = c
+				return nil
+			}); err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "token",
+			In:   "query",
 			Err:  err,
 		}
 	}
 	return params, nil
 }
 
-// DownloadDocumentByIDParams is parameters of downloadDocumentByID operation.
-type DownloadDocumentByIDParams struct {
-	// Unique identifier for the document.
-	DocID uuid.UUID
+// GetDocumentParams is parameters of getDocument operation.
+type GetDocumentParams struct {
+	// Уникальный идентификатор документа.
+	ID string
+	// Токен авторизации.
+	Token string
 }
 
-func unpackDownloadDocumentByIDParams(packed middleware.Parameters) (params DownloadDocumentByIDParams) {
+func unpackGetDocumentParams(packed middleware.Parameters) (params GetDocumentParams) {
 	{
 		key := middleware.ParameterKey{
-			Name: "doc_id",
+			Name: "id",
 			In:   "path",
 		}
-		params.DocID = packed[key].(uuid.UUID)
+		params.ID = packed[key].(string)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "token",
+			In:   "query",
+		}
+		params.Token = packed[key].(string)
 	}
 	return params
 }
 
-func decodeDownloadDocumentByIDParams(args [1]string, argsEscaped bool, r *http.Request) (params DownloadDocumentByIDParams, _ error) {
-	// Decode path: doc_id.
+func decodeGetDocumentParams(args [1]string, argsEscaped bool, r *http.Request) (params GetDocumentParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode path: id.
 	if err := func() error {
 		param := args[0]
 		if argsEscaped {
@@ -112,7 +167,7 @@ func decodeDownloadDocumentByIDParams(args [1]string, argsEscaped bool, r *http.
 		}
 		if len(param) > 0 {
 			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "doc_id",
+				Param:   "id",
 				Value:   param,
 				Style:   uri.PathStyleSimple,
 				Explode: false,
@@ -124,12 +179,12 @@ func decodeDownloadDocumentByIDParams(args [1]string, argsEscaped bool, r *http.
 					return err
 				}
 
-				c, err := conv.ToUUID(val)
+				c, err := conv.ToString(val)
 				if err != nil {
 					return err
 				}
 
-				params.DocID = c
+				params.ID = c
 				return nil
 			}(); err != nil {
 				return err
@@ -140,33 +195,79 @@ func decodeDownloadDocumentByIDParams(args [1]string, argsEscaped bool, r *http.
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "doc_id",
+			Name: "id",
 			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode query: token.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "token",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Token = c
+				return nil
+			}); err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "token",
+			In:   "query",
 			Err:  err,
 		}
 	}
 	return params, nil
 }
 
-// GetDocumentByIDParams is parameters of getDocumentByID operation.
-type GetDocumentByIDParams struct {
-	// Unique identifier for the document.
-	DocID uuid.UUID
+// GetDocumentHeadParams is parameters of getDocumentHead operation.
+type GetDocumentHeadParams struct {
+	// Уникальный идентификатор документа.
+	ID string
+	// Токен авторизации.
+	Token string
 }
 
-func unpackGetDocumentByIDParams(packed middleware.Parameters) (params GetDocumentByIDParams) {
+func unpackGetDocumentHeadParams(packed middleware.Parameters) (params GetDocumentHeadParams) {
 	{
 		key := middleware.ParameterKey{
-			Name: "doc_id",
+			Name: "id",
 			In:   "path",
 		}
-		params.DocID = packed[key].(uuid.UUID)
+		params.ID = packed[key].(string)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "token",
+			In:   "query",
+		}
+		params.Token = packed[key].(string)
 	}
 	return params
 }
 
-func decodeGetDocumentByIDParams(args [1]string, argsEscaped bool, r *http.Request) (params GetDocumentByIDParams, _ error) {
-	// Decode path: doc_id.
+func decodeGetDocumentHeadParams(args [1]string, argsEscaped bool, r *http.Request) (params GetDocumentHeadParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode path: id.
 	if err := func() error {
 		param := args[0]
 		if argsEscaped {
@@ -178,7 +279,7 @@ func decodeGetDocumentByIDParams(args [1]string, argsEscaped bool, r *http.Reque
 		}
 		if len(param) > 0 {
 			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "doc_id",
+				Param:   "id",
 				Value:   param,
 				Style:   uri.PathStyleSimple,
 				Explode: false,
@@ -190,12 +291,12 @@ func decodeGetDocumentByIDParams(args [1]string, argsEscaped bool, r *http.Reque
 					return err
 				}
 
-				c, err := conv.ToUUID(val)
+				c, err := conv.ToString(val)
 				if err != nil {
 					return err
 				}
 
-				params.DocID = c
+				params.ID = c
 				return nil
 			}(); err != nil {
 				return err
@@ -206,74 +307,44 @@ func decodeGetDocumentByIDParams(args [1]string, argsEscaped bool, r *http.Reque
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "doc_id",
+			Name: "id",
 			In:   "path",
 			Err:  err,
 		}
 	}
-	return params, nil
-}
-
-// GetDocumentByIDHeadParams is parameters of getDocumentByIDHead operation.
-type GetDocumentByIDHeadParams struct {
-	// Unique identifier for the document.
-	DocID uuid.UUID
-}
-
-func unpackGetDocumentByIDHeadParams(packed middleware.Parameters) (params GetDocumentByIDHeadParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "doc_id",
-			In:   "path",
-		}
-		params.DocID = packed[key].(uuid.UUID)
-	}
-	return params
-}
-
-func decodeGetDocumentByIDHeadParams(args [1]string, argsEscaped bool, r *http.Request) (params GetDocumentByIDHeadParams, _ error) {
-	// Decode path: doc_id.
+	// Decode query: token.
 	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "token",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
 		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "doc_id",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
 
-			if err := func() error {
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
 				val, err := d.DecodeValue()
 				if err != nil {
 					return err
 				}
 
-				c, err := conv.ToUUID(val)
+				c, err := conv.ToString(val)
 				if err != nil {
 					return err
 				}
 
-				params.DocID = c
+				params.Token = c
 				return nil
-			}(); err != nil {
+			}); err != nil {
 				return err
 			}
 		} else {
-			return validate.ErrFieldRequired
+			return err
 		}
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "doc_id",
-			In:   "path",
+			Name: "token",
+			In:   "query",
 			Err:  err,
 		}
 	}
@@ -282,29 +353,61 @@ func decodeGetDocumentByIDHeadParams(args [1]string, argsEscaped bool, r *http.R
 
 // ListDocumentsParams is parameters of listDocuments operation.
 type ListDocumentsParams struct {
-	// Page number for pagination.
-	Page OptInt
-	// Number of documents per page.
-	PerPage OptInt
+	// Токен авторизации.
+	Token string
+	// Логин пользователя для фильтрации (опционально, если
+	// не указан - возвращаются собственные документы).
+	Login OptString
+	// Имя колонки для фильтрации.
+	Key OptKey
+	// Значение фильтра.
+	Value OptString
+	// Количество документов в списке.
+	Limit OptInt
 }
 
 func unpackListDocumentsParams(packed middleware.Parameters) (params ListDocumentsParams) {
 	{
 		key := middleware.ParameterKey{
-			Name: "page",
+			Name: "token",
+			In:   "query",
+		}
+		params.Token = packed[key].(string)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "login",
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.Page = v.(OptInt)
+			params.Login = v.(OptString)
 		}
 	}
 	{
 		key := middleware.ParameterKey{
-			Name: "per_page",
+			Name: "key",
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.PerPage = v.(OptInt)
+			params.Key = v.(OptKey)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "value",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Value = v.(OptString)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "limit",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Limit = v.(OptInt)
 		}
 	}
 	return params
@@ -312,57 +415,120 @@ func unpackListDocumentsParams(packed middleware.Parameters) (params ListDocumen
 
 func decodeListDocumentsParams(args [0]string, argsEscaped bool, r *http.Request) (params ListDocumentsParams, _ error) {
 	q := uri.NewQueryDecoder(r.URL.Query())
-	// Set default value for query: page.
-	{
-		val := int(1)
-		params.Page.SetTo(val)
-	}
-	// Decode query: page.
+	// Decode query: token.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "page",
+			Name:    "token",
 			Style:   uri.QueryStyleForm,
 			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotPageVal int
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Token = c
+				return nil
+			}); err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "token",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: login.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "login",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotLoginVal string
 				if err := func() error {
 					val, err := d.DecodeValue()
 					if err != nil {
 						return err
 					}
 
-					c, err := conv.ToInt(val)
+					c, err := conv.ToString(val)
 					if err != nil {
 						return err
 					}
 
-					paramsDotPageVal = c
+					paramsDotLoginVal = c
 					return nil
 				}(); err != nil {
 					return err
 				}
-				params.Page.SetTo(paramsDotPageVal)
+				params.Login.SetTo(paramsDotLoginVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "login",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: key.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "key",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotKeyVal Key
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotKeyVal = Key(c)
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Key.SetTo(paramsDotKeyVal)
 				return nil
 			}); err != nil {
 				return err
 			}
 			if err := func() error {
-				if value, ok := params.Page.Get(); ok {
+				if value, ok := params.Key.Get(); ok {
 					if err := func() error {
-						if err := (validate.Int{
-							MinSet:        true,
-							Min:           1,
-							MaxSet:        false,
-							Max:           0,
-							MinExclusive:  false,
-							MaxExclusive:  false,
-							MultipleOfSet: false,
-							MultipleOf:    0,
-						}).Validate(int64(value)); err != nil {
-							return errors.Wrap(err, "int")
+						if err := value.Validate(); err != nil {
+							return err
 						}
 						return nil
 					}(); err != nil {
@@ -377,27 +543,63 @@ func decodeListDocumentsParams(args [0]string, argsEscaped bool, r *http.Request
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "page",
+			Name: "key",
 			In:   "query",
 			Err:  err,
 		}
 	}
-	// Set default value for query: per_page.
-	{
-		val := int(10)
-		params.PerPage.SetTo(val)
-	}
-	// Decode query: per_page.
+	// Decode query: value.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "per_page",
+			Name:    "value",
 			Style:   uri.QueryStyleForm,
 			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotPerPageVal int
+				var paramsDotValueVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotValueVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Value.SetTo(paramsDotValueVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "value",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: limit.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "limit",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotLimitVal int
 				if err := func() error {
 					val, err := d.DecodeValue()
 					if err != nil {
@@ -409,24 +611,24 @@ func decodeListDocumentsParams(args [0]string, argsEscaped bool, r *http.Request
 						return err
 					}
 
-					paramsDotPerPageVal = c
+					paramsDotLimitVal = c
 					return nil
 				}(); err != nil {
 					return err
 				}
-				params.PerPage.SetTo(paramsDotPerPageVal)
+				params.Limit.SetTo(paramsDotLimitVal)
 				return nil
 			}); err != nil {
 				return err
 			}
 			if err := func() error {
-				if value, ok := params.PerPage.Get(); ok {
+				if value, ok := params.Limit.Get(); ok {
 					if err := func() error {
 						if err := (validate.Int{
 							MinSet:        true,
 							Min:           1,
 							MaxSet:        true,
-							Max:           100,
+							Max:           1000,
 							MinExclusive:  false,
 							MaxExclusive:  false,
 							MultipleOfSet: false,
@@ -447,7 +649,7 @@ func decodeListDocumentsParams(args [0]string, argsEscaped bool, r *http.Request
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "per_page",
+			Name: "limit",
 			In:   "query",
 			Err:  err,
 		}
@@ -457,29 +659,61 @@ func decodeListDocumentsParams(args [0]string, argsEscaped bool, r *http.Request
 
 // ListDocumentsHeadParams is parameters of listDocumentsHead operation.
 type ListDocumentsHeadParams struct {
-	// Page number for pagination.
-	Page OptInt
-	// Number of documents per page.
-	PerPage OptInt
+	// Токен авторизации.
+	Token string
+	// Логин пользователя для фильтрации (опционально, если
+	// не указан - возвращаются собственные документы).
+	Login OptString
+	// Имя колонки для фильтрации.
+	Key OptKey
+	// Значение фильтра.
+	Value OptString
+	// Количество документов в списке.
+	Limit OptInt
 }
 
 func unpackListDocumentsHeadParams(packed middleware.Parameters) (params ListDocumentsHeadParams) {
 	{
 		key := middleware.ParameterKey{
-			Name: "page",
+			Name: "token",
+			In:   "query",
+		}
+		params.Token = packed[key].(string)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "login",
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.Page = v.(OptInt)
+			params.Login = v.(OptString)
 		}
 	}
 	{
 		key := middleware.ParameterKey{
-			Name: "per_page",
+			Name: "key",
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.PerPage = v.(OptInt)
+			params.Key = v.(OptKey)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "value",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Value = v.(OptString)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "limit",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Limit = v.(OptInt)
 		}
 	}
 	return params
@@ -487,57 +721,120 @@ func unpackListDocumentsHeadParams(packed middleware.Parameters) (params ListDoc
 
 func decodeListDocumentsHeadParams(args [0]string, argsEscaped bool, r *http.Request) (params ListDocumentsHeadParams, _ error) {
 	q := uri.NewQueryDecoder(r.URL.Query())
-	// Set default value for query: page.
-	{
-		val := int(1)
-		params.Page.SetTo(val)
-	}
-	// Decode query: page.
+	// Decode query: token.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "page",
+			Name:    "token",
 			Style:   uri.QueryStyleForm,
 			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotPageVal int
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Token = c
+				return nil
+			}); err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "token",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: login.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "login",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotLoginVal string
 				if err := func() error {
 					val, err := d.DecodeValue()
 					if err != nil {
 						return err
 					}
 
-					c, err := conv.ToInt(val)
+					c, err := conv.ToString(val)
 					if err != nil {
 						return err
 					}
 
-					paramsDotPageVal = c
+					paramsDotLoginVal = c
 					return nil
 				}(); err != nil {
 					return err
 				}
-				params.Page.SetTo(paramsDotPageVal)
+				params.Login.SetTo(paramsDotLoginVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "login",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: key.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "key",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotKeyVal Key
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotKeyVal = Key(c)
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Key.SetTo(paramsDotKeyVal)
 				return nil
 			}); err != nil {
 				return err
 			}
 			if err := func() error {
-				if value, ok := params.Page.Get(); ok {
+				if value, ok := params.Key.Get(); ok {
 					if err := func() error {
-						if err := (validate.Int{
-							MinSet:        true,
-							Min:           1,
-							MaxSet:        false,
-							Max:           0,
-							MinExclusive:  false,
-							MaxExclusive:  false,
-							MultipleOfSet: false,
-							MultipleOf:    0,
-						}).Validate(int64(value)); err != nil {
-							return errors.Wrap(err, "int")
+						if err := value.Validate(); err != nil {
+							return err
 						}
 						return nil
 					}(); err != nil {
@@ -552,27 +849,63 @@ func decodeListDocumentsHeadParams(args [0]string, argsEscaped bool, r *http.Req
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "page",
+			Name: "key",
 			In:   "query",
 			Err:  err,
 		}
 	}
-	// Set default value for query: per_page.
-	{
-		val := int(10)
-		params.PerPage.SetTo(val)
-	}
-	// Decode query: per_page.
+	// Decode query: value.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "per_page",
+			Name:    "value",
 			Style:   uri.QueryStyleForm,
 			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotPerPageVal int
+				var paramsDotValueVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotValueVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Value.SetTo(paramsDotValueVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "value",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: limit.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "limit",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotLimitVal int
 				if err := func() error {
 					val, err := d.DecodeValue()
 					if err != nil {
@@ -584,24 +917,24 @@ func decodeListDocumentsHeadParams(args [0]string, argsEscaped bool, r *http.Req
 						return err
 					}
 
-					paramsDotPerPageVal = c
+					paramsDotLimitVal = c
 					return nil
 				}(); err != nil {
 					return err
 				}
-				params.PerPage.SetTo(paramsDotPerPageVal)
+				params.Limit.SetTo(paramsDotLimitVal)
 				return nil
 			}); err != nil {
 				return err
 			}
 			if err := func() error {
-				if value, ok := params.PerPage.Get(); ok {
+				if value, ok := params.Limit.Get(); ok {
 					if err := func() error {
 						if err := (validate.Int{
 							MinSet:        true,
 							Min:           1,
 							MaxSet:        true,
-							Max:           100,
+							Max:           1000,
 							MinExclusive:  false,
 							MaxExclusive:  false,
 							MultipleOfSet: false,
@@ -622,8 +955,74 @@ func decodeListDocumentsHeadParams(args [0]string, argsEscaped bool, r *http.Req
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "per_page",
+			Name: "limit",
 			In:   "query",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// LogoutUserParams is parameters of logoutUser operation.
+type LogoutUserParams struct {
+	// Токен пользователя для завершения сессии.
+	Token string
+}
+
+func unpackLogoutUserParams(packed middleware.Parameters) (params LogoutUserParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "token",
+			In:   "path",
+		}
+		params.Token = packed[key].(string)
+	}
+	return params
+}
+
+func decodeLogoutUserParams(args [1]string, argsEscaped bool, r *http.Request) (params LogoutUserParams, _ error) {
+	// Decode path: token.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "token",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Token = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "token",
+			In:   "path",
 			Err:  err,
 		}
 	}

@@ -11,6 +11,7 @@ import (
 	"github.com/go-faster/errors"
 	"github.com/go-faster/jx"
 
+	"github.com/ogen-go/ogen/conv"
 	ht "github.com/ogen-go/ogen/http"
 	"github.com/ogen-go/ogen/ogenerrors"
 	"github.com/ogen-go/ogen/uri"
@@ -84,14 +85,6 @@ func (s *Server) decodeCreateDocumentRequest(r *http.Request) (
 				}); err != nil {
 					return req, close, errors.Wrap(err, "decode \"meta\"")
 				}
-				if err := func() error {
-					if err := request.Meta.Validate(); err != nil {
-						return err
-					}
-					return nil
-				}(); err != nil {
-					return req, close, errors.Wrap(err, "validate")
-				}
 			} else {
 				return req, close, errors.Wrap(err, "query")
 			}
@@ -127,7 +120,7 @@ func (s *Server) decodeCreateDocumentRequest(r *http.Request) (
 			if err := func() error {
 				files, ok := r.MultipartForm.File["file"]
 				if !ok || len(files) < 1 {
-					return validate.ErrFieldRequired
+					return nil
 				}
 				fh := files[0]
 
@@ -136,12 +129,12 @@ func (s *Server) decodeCreateDocumentRequest(r *http.Request) (
 					return errors.Wrap(err, "open")
 				}
 				closers = append(closers, f.Close)
-				request.File = ht.MultipartFile{
+				request.File.SetTo(ht.MultipartFile{
 					Name:   fh.Filename,
 					File:   f,
 					Size:   fh.Size,
 					Header: fh.Header,
-				}
+				})
 				return nil
 			}(); err != nil {
 				return req, close, errors.Wrap(err, "decode \"file\"")
@@ -178,45 +171,70 @@ func (s *Server) decodeLoginUserRequest(r *http.Request) (
 		return req, close, errors.Wrap(err, "parse media type")
 	}
 	switch {
-	case ct == "application/json":
+	case ct == "application/x-www-form-urlencoded":
 		if r.ContentLength == 0 {
 			return req, close, validate.ErrBodyRequired
 		}
-		buf, err := io.ReadAll(r.Body)
+		form, err := ht.ParseForm(r)
 		if err != nil {
-			return req, close, err
+			return req, close, errors.Wrap(err, "parse form")
 		}
-
-		if len(buf) == 0 {
-			return req, close, validate.ErrBodyRequired
-		}
-
-		d := jx.DecodeBytes(buf)
 
 		var request LoginRequest
-		if err := func() error {
-			if err := request.Decode(d); err != nil {
-				return err
+		q := uri.NewQueryDecoder(form)
+		{
+			cfg := uri.QueryParameterDecodingConfig{
+				Name:    "login",
+				Style:   uri.QueryStyleForm,
+				Explode: true,
 			}
-			if err := d.Skip(); err != io.EOF {
-				return errors.New("unexpected trailing data")
+			if err := q.HasParam(cfg); err == nil {
+				if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					request.Login = c
+					return nil
+				}); err != nil {
+					return req, close, errors.Wrap(err, "decode \"login\"")
+				}
+			} else {
+				return req, close, errors.Wrap(err, "query")
 			}
-			return nil
-		}(); err != nil {
-			err = &ogenerrors.DecodeBodyError{
-				ContentType: ct,
-				Body:        buf,
-				Err:         err,
-			}
-			return req, close, err
 		}
-		if err := func() error {
-			if err := request.Validate(); err != nil {
-				return err
+		{
+			cfg := uri.QueryParameterDecodingConfig{
+				Name:    "pswd",
+				Style:   uri.QueryStyleForm,
+				Explode: true,
 			}
-			return nil
-		}(); err != nil {
-			return req, close, errors.Wrap(err, "validate")
+			if err := q.HasParam(cfg); err == nil {
+				if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					request.Pswd = c
+					return nil
+				}); err != nil {
+					return req, close, errors.Wrap(err, "decode \"pswd\"")
+				}
+			} else {
+				return req, close, errors.Wrap(err, "query")
+			}
 		}
 		return &request, close, nil
 	default:

@@ -10,17 +10,14 @@ import (
 	"github.com/go-faster/jx"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
-
-	"github.com/ogen-go/ogen/conv"
-	"github.com/ogen-go/ogen/uri"
 )
 
 func encodeCreateDocumentResponse(response CreateDocumentRes, w http.ResponseWriter, span trace.Span) error {
 	switch response := response.(type) {
 	case *CreateDocumentResponse:
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(201)
-		span.SetStatus(codes.Ok, http.StatusText(201))
+		w.WriteHeader(200)
+		span.SetStatus(codes.Ok, http.StatusText(200))
 
 		e := new(jx.Encoder)
 		response.Encode(e)
@@ -74,7 +71,7 @@ func encodeCreateDocumentResponse(response CreateDocumentRes, w http.ResponseWri
 	}
 }
 
-func encodeDeleteDocumentByIDResponse(response DeleteDocumentByIDRes, w http.ResponseWriter, span trace.Span) error {
+func encodeDeleteDocumentResponse(response DeleteDocumentRes, w http.ResponseWriter, span trace.Span) error {
 	switch response := response.(type) {
 	case *DeleteDocumentResponse:
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -146,100 +143,7 @@ func encodeDeleteDocumentByIDResponse(response DeleteDocumentByIDRes, w http.Res
 	}
 }
 
-func encodeDownloadDocumentByIDResponse(response DownloadDocumentByIDRes, w http.ResponseWriter, span trace.Span) error {
-	switch response := response.(type) {
-	case *DownloadDocumentByIDOKHeaders:
-		w.Header().Set("Content-Type", "application/octet-stream")
-		// Encoding response headers.
-		{
-			h := uri.NewHeaderEncoder(w.Header())
-			// Encode "Content-Disposition" header.
-			{
-				cfg := uri.HeaderParameterEncodingConfig{
-					Name:    "Content-Disposition",
-					Explode: false,
-				}
-				if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-					if val, ok := response.ContentDisposition.Get(); ok {
-						return e.EncodeValue(conv.StringToString(val))
-					}
-					return nil
-				}); err != nil {
-					return errors.Wrap(err, "encode Content-Disposition header")
-				}
-			}
-		}
-		w.WriteHeader(200)
-		span.SetStatus(codes.Ok, http.StatusText(200))
-
-		writer := w
-		if closer, ok := response.Response.Data.(io.Closer); ok {
-			defer closer.Close()
-		}
-		if _, err := io.Copy(writer, response.Response); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	case *UnauthorizedError:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(401)
-		span.SetStatus(codes.Error, http.StatusText(401))
-
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	case *ForbiddenError:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(403)
-		span.SetStatus(codes.Error, http.StatusText(403))
-
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	case *NotFoundError:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(404)
-		span.SetStatus(codes.Error, http.StatusText(404))
-
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	case *InternalServerError:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(500)
-		span.SetStatus(codes.Error, http.StatusText(500))
-
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	default:
-		return errors.Errorf("unexpected response type: %T", response)
-	}
-}
-
-func encodeGetDocumentByIDResponse(response GetDocumentByIDRes, w http.ResponseWriter, span trace.Span) error {
+func encodeGetDocumentResponse(response GetDocumentRes, w http.ResponseWriter, span trace.Span) error {
 	switch response := response.(type) {
 	case *GetDocumentResponse:
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -254,6 +158,21 @@ func encodeGetDocumentByIDResponse(response GetDocumentByIDRes, w http.ResponseW
 
 		return nil
 
+	case *GetDocumentOKApplicationOctetStream:
+		w.Header().Set("Content-Type", "application/octet-stream")
+		w.WriteHeader(200)
+		span.SetStatus(codes.Ok, http.StatusText(200))
+
+		writer := w
+		if closer, ok := response.Data.(io.Closer); ok {
+			defer closer.Close()
+		}
+		if _, err := io.Copy(writer, response); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		return nil
+
 	case *UnauthorizedError:
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(401)
@@ -311,142 +230,33 @@ func encodeGetDocumentByIDResponse(response GetDocumentByIDRes, w http.ResponseW
 	}
 }
 
-func encodeGetDocumentByIDHeadResponse(response GetDocumentByIDHeadRes, w http.ResponseWriter, span trace.Span) error {
+func encodeGetDocumentHeadResponse(response GetDocumentHeadRes, w http.ResponseWriter, span trace.Span) error {
 	switch response := response.(type) {
-	case *GetDocumentByIDHeadOK:
-		// Encoding response headers.
-		{
-			h := uri.NewHeaderEncoder(w.Header())
-			// Encode "X-Document-Checksum" header.
-			{
-				cfg := uri.HeaderParameterEncodingConfig{
-					Name:    "X-Document-Checksum",
-					Explode: false,
-				}
-				if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-					if val, ok := response.XDocumentChecksum.Get(); ok {
-						return e.EncodeValue(conv.StringToString(val))
-					}
-					return nil
-				}); err != nil {
-					return errors.Wrap(err, "encode X-Document-Checksum header")
-				}
-			}
-			// Encode "X-Document-Created-At" header.
-			{
-				cfg := uri.HeaderParameterEncodingConfig{
-					Name:    "X-Document-Created-At",
-					Explode: false,
-				}
-				if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-					if val, ok := response.XDocumentCreatedAt.Get(); ok {
-						return e.EncodeValue(conv.DateTimeToString(val))
-					}
-					return nil
-				}); err != nil {
-					return errors.Wrap(err, "encode X-Document-Created-At header")
-				}
-			}
-			// Encode "X-Document-ID" header.
-			{
-				cfg := uri.HeaderParameterEncodingConfig{
-					Name:    "X-Document-ID",
-					Explode: false,
-				}
-				if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-					if val, ok := response.XDocumentID.Get(); ok {
-						return e.EncodeValue(conv.UUIDToString(val))
-					}
-					return nil
-				}); err != nil {
-					return errors.Wrap(err, "encode X-Document-ID header")
-				}
-			}
-			// Encode "X-Document-MIME-Type" header.
-			{
-				cfg := uri.HeaderParameterEncodingConfig{
-					Name:    "X-Document-MIME-Type",
-					Explode: false,
-				}
-				if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-					if val, ok := response.XDocumentMIMEType.Get(); ok {
-						return e.EncodeValue(conv.StringToString(val))
-					}
-					return nil
-				}); err != nil {
-					return errors.Wrap(err, "encode X-Document-MIME-Type header")
-				}
-			}
-			// Encode "X-Document-Name" header.
-			{
-				cfg := uri.HeaderParameterEncodingConfig{
-					Name:    "X-Document-Name",
-					Explode: false,
-				}
-				if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-					if val, ok := response.XDocumentName.Get(); ok {
-						return e.EncodeValue(conv.StringToString(val))
-					}
-					return nil
-				}); err != nil {
-					return errors.Wrap(err, "encode X-Document-Name header")
-				}
-			}
-			// Encode "X-Document-Size" header.
-			{
-				cfg := uri.HeaderParameterEncodingConfig{
-					Name:    "X-Document-Size",
-					Explode: false,
-				}
-				if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-					if val, ok := response.XDocumentSize.Get(); ok {
-						return e.EncodeValue(conv.IntToString(val))
-					}
-					return nil
-				}); err != nil {
-					return errors.Wrap(err, "encode X-Document-Size header")
-				}
-			}
-			// Encode "X-Document-Updated-At" header.
-			{
-				cfg := uri.HeaderParameterEncodingConfig{
-					Name:    "X-Document-Updated-At",
-					Explode: false,
-				}
-				if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-					if val, ok := response.XDocumentUpdatedAt.Get(); ok {
-						return e.EncodeValue(conv.DateTimeToString(val))
-					}
-					return nil
-				}); err != nil {
-					return errors.Wrap(err, "encode X-Document-Updated-At header")
-				}
-			}
-		}
+	case *GetDocumentHeadOK:
 		w.WriteHeader(200)
 		span.SetStatus(codes.Ok, http.StatusText(200))
 
 		return nil
 
-	case *GetDocumentByIDHeadUnauthorized:
+	case *GetDocumentHeadUnauthorized:
 		w.WriteHeader(401)
 		span.SetStatus(codes.Error, http.StatusText(401))
 
 		return nil
 
-	case *GetDocumentByIDHeadForbidden:
+	case *GetDocumentHeadForbidden:
 		w.WriteHeader(403)
 		span.SetStatus(codes.Error, http.StatusText(403))
 
 		return nil
 
-	case *GetDocumentByIDHeadNotFound:
+	case *GetDocumentHeadNotFound:
 		w.WriteHeader(404)
 		span.SetStatus(codes.Error, http.StatusText(404))
 
 		return nil
 
-	case *GetDocumentByIDHeadInternalServerError:
+	case *GetDocumentHeadInternalServerError:
 		w.WriteHeader(500)
 		span.SetStatus(codes.Error, http.StatusText(500))
 
@@ -506,55 +316,6 @@ func encodeListDocumentsResponse(response ListDocumentsRes, w http.ResponseWrite
 func encodeListDocumentsHeadResponse(response ListDocumentsHeadRes, w http.ResponseWriter, span trace.Span) error {
 	switch response := response.(type) {
 	case *ListDocumentsHeadOK:
-		// Encoding response headers.
-		{
-			h := uri.NewHeaderEncoder(w.Header())
-			// Encode "X-Page" header.
-			{
-				cfg := uri.HeaderParameterEncodingConfig{
-					Name:    "X-Page",
-					Explode: false,
-				}
-				if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-					if val, ok := response.XPage.Get(); ok {
-						return e.EncodeValue(conv.IntToString(val))
-					}
-					return nil
-				}); err != nil {
-					return errors.Wrap(err, "encode X-Page header")
-				}
-			}
-			// Encode "X-Per-Page" header.
-			{
-				cfg := uri.HeaderParameterEncodingConfig{
-					Name:    "X-Per-Page",
-					Explode: false,
-				}
-				if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-					if val, ok := response.XPerPage.Get(); ok {
-						return e.EncodeValue(conv.IntToString(val))
-					}
-					return nil
-				}); err != nil {
-					return errors.Wrap(err, "encode X-Per-Page header")
-				}
-			}
-			// Encode "X-Total-Count" header.
-			{
-				cfg := uri.HeaderParameterEncodingConfig{
-					Name:    "X-Total-Count",
-					Explode: false,
-				}
-				if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-					if val, ok := response.XTotalCount.Get(); ok {
-						return e.EncodeValue(conv.IntToString(val))
-					}
-					return nil
-				}); err != nil {
-					return errors.Wrap(err, "encode X-Total-Count header")
-				}
-			}
-		}
 		w.WriteHeader(200)
 		span.SetStatus(codes.Ok, http.StatusText(200))
 
@@ -638,7 +399,7 @@ func encodeLoginUserResponse(response LoginUserRes, w http.ResponseWriter, span 
 
 func encodeLogoutUserResponse(response LogoutUserRes, w http.ResponseWriter, span trace.Span) error {
 	switch response := response.(type) {
-	case *LogoutUserOK:
+	case *LogoutResponse:
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(200)
 		span.SetStatus(codes.Ok, http.StatusText(200))
@@ -686,8 +447,8 @@ func encodeRegisterUserResponse(response RegisterUserRes, w http.ResponseWriter,
 	switch response := response.(type) {
 	case *RegisterResponse:
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(201)
-		span.SetStatus(codes.Ok, http.StatusText(201))
+		w.WriteHeader(200)
+		span.SetStatus(codes.Ok, http.StatusText(200))
 
 		e := new(jx.Encoder)
 		response.Encode(e)
@@ -701,19 +462,6 @@ func encodeRegisterUserResponse(response RegisterUserRes, w http.ResponseWriter,
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(400)
 		span.SetStatus(codes.Error, http.StatusText(400))
-
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	case *ConflictError:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(409)
-		span.SetStatus(codes.Error, http.StatusText(409))
 
 		e := new(jx.Encoder)
 		response.Encode(e)

@@ -61,87 +61,51 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 			switch elem[0] {
-			case 'a': // Prefix: "auth/"
+			case 'a': // Prefix: "auth"
 
-				if l := len("auth/"); len(elem) >= l && elem[0:l] == "auth/" {
+				if l := len("auth"); len(elem) >= l && elem[0:l] == "auth" {
 					elem = elem[l:]
 				} else {
 					break
 				}
 
 				if len(elem) == 0 {
-					break
+					switch r.Method {
+					case "POST":
+						s.handleLoginUserRequest([0]string{}, elemIsEscaped, w, r)
+					default:
+						s.notAllowed(w, r, "POST")
+					}
+
+					return
 				}
 				switch elem[0] {
-				case 'l': // Prefix: "log"
+				case '/': // Prefix: "/"
 
-					if l := len("log"); len(elem) >= l && elem[0:l] == "log" {
+					if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 						elem = elem[l:]
 					} else {
 						break
 					}
 
-					if len(elem) == 0 {
+					// Param: "token"
+					// Leaf parameter, slashes are prohibited
+					idx := strings.IndexByte(elem, '/')
+					if idx >= 0 {
 						break
 					}
-					switch elem[0] {
-					case 'i': // Prefix: "in"
-
-						if l := len("in"); len(elem) >= l && elem[0:l] == "in" {
-							elem = elem[l:]
-						} else {
-							break
-						}
-
-						if len(elem) == 0 {
-							// Leaf node.
-							switch r.Method {
-							case "POST":
-								s.handleLoginUserRequest([0]string{}, elemIsEscaped, w, r)
-							default:
-								s.notAllowed(w, r, "POST")
-							}
-
-							return
-						}
-
-					case 'o': // Prefix: "out"
-
-						if l := len("out"); len(elem) >= l && elem[0:l] == "out" {
-							elem = elem[l:]
-						} else {
-							break
-						}
-
-						if len(elem) == 0 {
-							// Leaf node.
-							switch r.Method {
-							case "POST":
-								s.handleLogoutUserRequest([0]string{}, elemIsEscaped, w, r)
-							default:
-								s.notAllowed(w, r, "POST")
-							}
-
-							return
-						}
-
-					}
-
-				case 'r': // Prefix: "register"
-
-					if l := len("register"); len(elem) >= l && elem[0:l] == "register" {
-						elem = elem[l:]
-					} else {
-						break
-					}
+					args[0] = elem
+					elem = ""
 
 					if len(elem) == 0 {
 						// Leaf node.
 						switch r.Method {
-						case "POST":
-							s.handleRegisterUserRequest([0]string{}, elemIsEscaped, w, r)
+						case "DELETE":
+							s.handleLogoutUserRequest([1]string{
+								args[0],
+							}, elemIsEscaped, w, r)
 						default:
-							s.notAllowed(w, r, "POST")
+							s.notAllowed(w, r, "DELETE")
 						}
 
 						return
@@ -180,27 +144,28 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						break
 					}
 
-					// Param: "doc_id"
-					// Match until "/"
+					// Param: "id"
+					// Leaf parameter, slashes are prohibited
 					idx := strings.IndexByte(elem, '/')
-					if idx < 0 {
-						idx = len(elem)
+					if idx >= 0 {
+						break
 					}
-					args[0] = elem[:idx]
-					elem = elem[idx:]
+					args[0] = elem
+					elem = ""
 
 					if len(elem) == 0 {
+						// Leaf node.
 						switch r.Method {
 						case "DELETE":
-							s.handleDeleteDocumentByIDRequest([1]string{
+							s.handleDeleteDocumentRequest([1]string{
 								args[0],
 							}, elemIsEscaped, w, r)
 						case "GET":
-							s.handleGetDocumentByIDRequest([1]string{
+							s.handleGetDocumentRequest([1]string{
 								args[0],
 							}, elemIsEscaped, w, r)
 						case "HEAD":
-							s.handleGetDocumentByIDHeadRequest([1]string{
+							s.handleGetDocumentHeadRequest([1]string{
 								args[0],
 							}, elemIsEscaped, w, r)
 						default:
@@ -209,31 +174,27 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 						return
 					}
-					switch elem[0] {
-					case '/': // Prefix: "/download"
 
-						if l := len("/download"); len(elem) >= l && elem[0:l] == "/download" {
-							elem = elem[l:]
-						} else {
-							break
-						}
+				}
 
-						if len(elem) == 0 {
-							// Leaf node.
-							switch r.Method {
-							case "GET":
-								s.handleDownloadDocumentByIDRequest([1]string{
-									args[0],
-								}, elemIsEscaped, w, r)
-							default:
-								s.notAllowed(w, r, "GET")
-							}
+			case 'r': // Prefix: "register"
 
-							return
-						}
+				if l := len("register"); len(elem) >= l && elem[0:l] == "register" {
+					elem = elem[l:]
+				} else {
+					break
+				}
 
+				if len(elem) == 0 {
+					// Leaf node.
+					switch r.Method {
+					case "POST":
+						s.handleRegisterUserRequest([0]string{}, elemIsEscaped, w, r)
+					default:
+						s.notAllowed(w, r, "POST")
 					}
 
+					return
 				}
 
 			}
@@ -330,98 +291,56 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 				break
 			}
 			switch elem[0] {
-			case 'a': // Prefix: "auth/"
+			case 'a': // Prefix: "auth"
 
-				if l := len("auth/"); len(elem) >= l && elem[0:l] == "auth/" {
+				if l := len("auth"); len(elem) >= l && elem[0:l] == "auth" {
 					elem = elem[l:]
 				} else {
 					break
 				}
 
 				if len(elem) == 0 {
-					break
+					switch method {
+					case "POST":
+						r.name = LoginUserOperation
+						r.summary = "Аутентификация пользователя"
+						r.operationID = "loginUser"
+						r.pathPattern = "/api/auth"
+						r.args = args
+						r.count = 0
+						return r, true
+					default:
+						return
+					}
 				}
 				switch elem[0] {
-				case 'l': // Prefix: "log"
+				case '/': // Prefix: "/"
 
-					if l := len("log"); len(elem) >= l && elem[0:l] == "log" {
+					if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 						elem = elem[l:]
 					} else {
 						break
 					}
 
-					if len(elem) == 0 {
+					// Param: "token"
+					// Leaf parameter, slashes are prohibited
+					idx := strings.IndexByte(elem, '/')
+					if idx >= 0 {
 						break
 					}
-					switch elem[0] {
-					case 'i': // Prefix: "in"
-
-						if l := len("in"); len(elem) >= l && elem[0:l] == "in" {
-							elem = elem[l:]
-						} else {
-							break
-						}
-
-						if len(elem) == 0 {
-							// Leaf node.
-							switch method {
-							case "POST":
-								r.name = LoginUserOperation
-								r.summary = "Login user"
-								r.operationID = "loginUser"
-								r.pathPattern = "/api/auth/login"
-								r.args = args
-								r.count = 0
-								return r, true
-							default:
-								return
-							}
-						}
-
-					case 'o': // Prefix: "out"
-
-						if l := len("out"); len(elem) >= l && elem[0:l] == "out" {
-							elem = elem[l:]
-						} else {
-							break
-						}
-
-						if len(elem) == 0 {
-							// Leaf node.
-							switch method {
-							case "POST":
-								r.name = LogoutUserOperation
-								r.summary = "Logout user"
-								r.operationID = "logoutUser"
-								r.pathPattern = "/api/auth/logout"
-								r.args = args
-								r.count = 0
-								return r, true
-							default:
-								return
-							}
-						}
-
-					}
-
-				case 'r': // Prefix: "register"
-
-					if l := len("register"); len(elem) >= l && elem[0:l] == "register" {
-						elem = elem[l:]
-					} else {
-						break
-					}
+					args[0] = elem
+					elem = ""
 
 					if len(elem) == 0 {
 						// Leaf node.
 						switch method {
-						case "POST":
-							r.name = RegisterUserOperation
-							r.summary = "Register a new user"
-							r.operationID = "registerUser"
-							r.pathPattern = "/api/auth/register"
+						case "DELETE":
+							r.name = LogoutUserOperation
+							r.summary = "Завершение авторизованной сессии"
+							r.operationID = "logoutUser"
+							r.pathPattern = "/api/auth/{token}"
 							r.args = args
-							r.count = 0
+							r.count = 1
 							return r, true
 						default:
 							return
@@ -442,7 +361,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					switch method {
 					case "GET":
 						r.name = ListDocumentsOperation
-						r.summary = "Get list of documents"
+						r.summary = "Получение списка документов"
 						r.operationID = "listDocuments"
 						r.pathPattern = "/api/docs"
 						r.args = args
@@ -450,7 +369,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						return r, true
 					case "HEAD":
 						r.name = ListDocumentsHeadOperation
-						r.summary = "Get list of documents headers"
+						r.summary = "Получение заголовков списка документов"
 						r.operationID = "listDocumentsHead"
 						r.pathPattern = "/api/docs"
 						r.args = args
@@ -458,7 +377,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						return r, true
 					case "POST":
 						r.name = CreateDocumentOperation
-						r.summary = "Upload a new document"
+						r.summary = "Загрузка нового документа"
 						r.operationID = "createDocument"
 						r.pathPattern = "/api/docs"
 						r.args = args
@@ -477,38 +396,39 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						break
 					}
 
-					// Param: "doc_id"
-					// Match until "/"
+					// Param: "id"
+					// Leaf parameter, slashes are prohibited
 					idx := strings.IndexByte(elem, '/')
-					if idx < 0 {
-						idx = len(elem)
+					if idx >= 0 {
+						break
 					}
-					args[0] = elem[:idx]
-					elem = elem[idx:]
+					args[0] = elem
+					elem = ""
 
 					if len(elem) == 0 {
+						// Leaf node.
 						switch method {
 						case "DELETE":
-							r.name = DeleteDocumentByIDOperation
-							r.summary = "Delete document by ID"
-							r.operationID = "deleteDocumentByID"
-							r.pathPattern = "/api/docs/{doc_id}"
+							r.name = DeleteDocumentOperation
+							r.summary = "Удаление документа"
+							r.operationID = "deleteDocument"
+							r.pathPattern = "/api/docs/{id}"
 							r.args = args
 							r.count = 1
 							return r, true
 						case "GET":
-							r.name = GetDocumentByIDOperation
-							r.summary = "Get document by ID"
-							r.operationID = "getDocumentByID"
-							r.pathPattern = "/api/docs/{doc_id}"
+							r.name = GetDocumentOperation
+							r.summary = "Получение документа по ID"
+							r.operationID = "getDocument"
+							r.pathPattern = "/api/docs/{id}"
 							r.args = args
 							r.count = 1
 							return r, true
 						case "HEAD":
-							r.name = GetDocumentByIDHeadOperation
-							r.summary = "Get document metadata headers"
-							r.operationID = "getDocumentByIDHead"
-							r.pathPattern = "/api/docs/{doc_id}"
+							r.name = GetDocumentHeadOperation
+							r.summary = "Получение заголовков документа по ID"
+							r.operationID = "getDocumentHead"
+							r.pathPattern = "/api/docs/{id}"
 							r.args = args
 							r.count = 1
 							return r, true
@@ -516,33 +436,31 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							return
 						}
 					}
-					switch elem[0] {
-					case '/': // Prefix: "/download"
 
-						if l := len("/download"); len(elem) >= l && elem[0:l] == "/download" {
-							elem = elem[l:]
-						} else {
-							break
-						}
+				}
 
-						if len(elem) == 0 {
-							// Leaf node.
-							switch method {
-							case "GET":
-								r.name = DownloadDocumentByIDOperation
-								r.summary = "Download document by ID"
-								r.operationID = "downloadDocumentByID"
-								r.pathPattern = "/api/docs/{doc_id}/download"
-								r.args = args
-								r.count = 1
-								return r, true
-							default:
-								return
-							}
-						}
+			case 'r': // Prefix: "register"
 
+				if l := len("register"); len(elem) >= l && elem[0:l] == "register" {
+					elem = elem[l:]
+				} else {
+					break
+				}
+
+				if len(elem) == 0 {
+					// Leaf node.
+					switch method {
+					case "POST":
+						r.name = RegisterUserOperation
+						r.summary = "Регистрация нового пользователя"
+						r.operationID = "registerUser"
+						r.pathPattern = "/api/register"
+						r.args = args
+						r.count = 0
+						return r, true
+					default:
+						return
 					}
-
 				}
 
 			}

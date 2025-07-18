@@ -1,134 +1,105 @@
 get:
   tags:
     - docs
-  summary: Get document by ID
-  description: Get document metadata by ID
-  operationId: getDocumentByID
-  security:
-    - bearerAuth: []
+  summary: Получение документа по ID
+  description: Получение конкретного документа по его идентификатору
+  operationId: getDocument
   parameters:
     - $ref: "../params/doc_id.yaml"
+    - $ref: "../params/token.yaml"
   responses:
     '200':
-      description: Document metadata
+      description: Документ найден
       content:
         application/json:
           schema:
             $ref: "../components/get_document_response.yaml"
+        application/octet-stream:
+          schema:
+            type: string
+            format: binary
     '401':
-      description: Unauthorized
+      description: Не авторизован
       content:
         application/json:
           schema:
             $ref: "../components/errors/unauthorized_error.yaml"
     '403':
-      description: Forbidden - not document owner
+      description: Нет прав доступа
       content:
         application/json:
           schema:
             $ref: "../components/errors/forbidden_error.yaml"
     '404':
-      description: Document not found
+      description: Документ не найден
       content:
         application/json:
           schema:
             $ref: "../components/errors/not_found_error.yaml"
     '500':
-      description: Internal server error
+      description: Внутренняя ошибка сервера
       content:
         application/json:
           schema:
             $ref: "../components/errors/internal_server_error.yaml"
+
 head:
   tags:
     - docs
-  summary: Get document metadata headers
-  description: Get document metadata headers by ID (same as GET but without body)
-  operationId: getDocumentByIDHead
-  security:
-    - bearerAuth: []
+  summary: Получение заголовков документа по ID
+  description: HEAD запрос для получения заголовков конкретного документа
+  operationId: getDocumentHead
   parameters:
     - $ref: "../params/doc_id.yaml"
+    - $ref: "../params/token.yaml"
   responses:
     '200':
-      description: Document metadata headers
-      headers:
-        X-Document-ID:
-          description: Document ID
-          schema:
-            type: string
-            format: uuid
-        X-Document-Name:
-          description: Document name
-          schema:
-            type: string
-        X-Document-Size:
-          description: Document size in bytes
-          schema:
-            type: integer
-        X-Document-MIME-Type:
-          description: Document MIME type
-          schema:
-            type: string
-        X-Document-Checksum:
-          description: Document checksum
-          schema:
-            type: string
-        X-Document-Created-At:
-          description: Document creation timestamp
-          schema:
-            type: string
-            format: date-time
-        X-Document-Updated-At:
-          description: Document last update timestamp
-          schema:
-            type: string
-            format: date-time
+      description: Заголовки документа
     '401':
-      description: Unauthorized
+      description: Не авторизован
     '403':
-      description: Forbidden - not document owner
+      description: Нет прав доступа
     '404':
-      description: Document not found
+      description: Документ не найден
     '500':
-      description: Internal server error
+      description: Внутренняя ошибка сервера
+
 delete:
   tags:
     - docs
-  summary: Delete document by ID
-  description: Delete document by ID
-  operationId: deleteDocumentByID
-  security:
-    - bearerAuth: []
+  summary: Удаление документа
+  description: Удаление документа по его идентификатору
+  operationId: deleteDocument
   parameters:
     - $ref: "../params/doc_id.yaml"
+    - $ref: "../params/token.yaml"
   responses:
     '200':
-      description: Document deleted successfully
+      description: Документ успешно удален
       content:
         application/json:
           schema:
             $ref: "../components/delete_document_response.yaml"
     '401':
-      description: Unauthorized
+      description: Не авторизован
       content:
         application/json:
           schema:
             $ref: "../components/errors/unauthorized_error.yaml"
     '403':
-      description: Forbidden - not document owner
+      description: Нет прав доступа
       content:
         application/json:
           schema:
             $ref: "../components/errors/forbidden_error.yaml"
     '404':
-      description: Document not found
+      description: Документ не найден
       content:
         application/json:
           schema:
             $ref: "../components/errors/not_found_error.yaml"
     '500':
-      description: Internal server error
+      description: Внутренняя ошибка сервера
       content:
         application/json:
           schema:

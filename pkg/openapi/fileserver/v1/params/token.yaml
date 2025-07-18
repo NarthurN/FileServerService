@@ -1,0 +1,7 @@
+name: token
+in: query
+required: true
+schema:
+  type: string
+description: Токен авторизации
+example: "sfuqwejqjoiu93e29"

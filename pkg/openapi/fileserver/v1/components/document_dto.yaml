@@ -2,53 +2,38 @@ type: object
 properties:
   id:
     type: string
-    format: uuid
-    description: Unique identifier for the document
+    description: Уникальный идентификатор документа
+    example: "qwdj1q4o34u34ih759ou1"
   name:
     type: string
-    description: Document name
-    minLength: 1
-    maxLength: 255
-  size:
-    type: integer
-    format: int64
-    description: Document size in bytes
-    minimum: 0
-  mime_type:
+    description: Имя документа
+    example: "photo.jpg"
+  mime:
     type: string
-    description: Document MIME type
-    example: "application/pdf"
-  checksum:
+    description: MIME тип документа
+    example: "image/jpg"
+  file:
+    type: boolean
+    description: Является ли документ файлом
+    example: true
+  public:
+    type: boolean
+    description: Является ли документ публичным
+    example: false
+  created:
     type: string
-    description: Document checksum (SHA256)
-    pattern: "^[a-f0-9]{64}$"
-  owner_id:
-    type: string
-    format: uuid
-    description: ID of the user who owns the document
-  created_at:
-    type: string
-    format: date-time
-    description: Timestamp when document was uploaded
-  updated_at:
-    type: string
-    format: date-time
-    description: Timestamp when document was last updated
+    description: Дата и время создания документа
+    example: "2018-12-24 10:30:56"
+  grant:
+    type: array
+    items:
+      type: string
+    description: Список логинов пользователей с доступом
+    example: ["login1", "login2"]
 required:
   - id
   - name
-  - size
-  - mime_type
-  - checksum
-  - owner_id
-  - created_at
-  - updated_at
-example:
-  id: "550e8400-e29b-41d4-a716-446655440001"
-  name: "example.pdf"
-  size: 1024
-  mime_type: "application/pdf"
-  checksum: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-  owner_id: "550e8400-e29b-41d4-a716-446655440000"
-  created_at: "2023-01-01T12:00:00Z"
-  updated_at: "2023-01-01T12:00:00Z"
+  - mime
+  - file
+  - public
+  - created

@@ -5,20 +5,16 @@ type CreateDocumentRes interface {
 	createDocumentRes()
 }
 
-type DeleteDocumentByIDRes interface {
-	deleteDocumentByIDRes()
+type DeleteDocumentRes interface {
+	deleteDocumentRes()
 }
 
-type DownloadDocumentByIDRes interface {
-	downloadDocumentByIDRes()
+type GetDocumentHeadRes interface {
+	getDocumentHeadRes()
 }
 
-type GetDocumentByIDHeadRes interface {
-	getDocumentByIDHeadRes()
-}
-
-type GetDocumentByIDRes interface {
-	getDocumentByIDRes()
+type GetDocumentRes interface {
+	getDocumentRes()
 }
 
 type ListDocumentsHeadRes interface {

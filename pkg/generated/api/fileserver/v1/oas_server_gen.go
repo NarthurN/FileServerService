@@ -10,83 +10,78 @@ import (
 type Handler interface {
 	// CreateDocument implements createDocument operation.
 	//
-	// Upload a new document file.
+	// Загрузка нового документа (файл или JSON данные).
 	//
 	// POST /api/docs
 	CreateDocument(ctx context.Context, req *CreateDocumentRequestMultipart) (CreateDocumentRes, error)
-	// DeleteDocumentByID implements deleteDocumentByID operation.
+	// DeleteDocument implements deleteDocument operation.
 	//
-	// Delete document by ID.
+	// Удаление документа по его идентификатору.
 	//
-	// DELETE /api/docs/{doc_id}
-	DeleteDocumentByID(ctx context.Context, params DeleteDocumentByIDParams) (DeleteDocumentByIDRes, error)
-	// DownloadDocumentByID implements downloadDocumentByID operation.
+	// DELETE /api/docs/{id}
+	DeleteDocument(ctx context.Context, params DeleteDocumentParams) (DeleteDocumentRes, error)
+	// GetDocument implements getDocument operation.
 	//
-	// Download document file by ID.
+	// Получение конкретного документа по его
+	// идентификатору.
 	//
-	// GET /api/docs/{doc_id}/download
-	DownloadDocumentByID(ctx context.Context, params DownloadDocumentByIDParams) (DownloadDocumentByIDRes, error)
-	// GetDocumentByID implements getDocumentByID operation.
+	// GET /api/docs/{id}
+	GetDocument(ctx context.Context, params GetDocumentParams) (GetDocumentRes, error)
+	// GetDocumentHead implements getDocumentHead operation.
 	//
-	// Get document metadata by ID.
+	// HEAD запрос для получения заголовков конкретного
+	// документа.
 	//
-	// GET /api/docs/{doc_id}
-	GetDocumentByID(ctx context.Context, params GetDocumentByIDParams) (GetDocumentByIDRes, error)
-	// GetDocumentByIDHead implements getDocumentByIDHead operation.
-	//
-	// Get document metadata headers by ID (same as GET but without body).
-	//
-	// HEAD /api/docs/{doc_id}
-	GetDocumentByIDHead(ctx context.Context, params GetDocumentByIDHeadParams) (GetDocumentByIDHeadRes, error)
+	// HEAD /api/docs/{id}
+	GetDocumentHead(ctx context.Context, params GetDocumentHeadParams) (GetDocumentHeadRes, error)
 	// ListDocuments implements listDocuments operation.
 	//
-	// Get paginated list of user documents.
+	// Получение списка документов с возможностью
+	// фильтрации.
 	//
 	// GET /api/docs
 	ListDocuments(ctx context.Context, params ListDocumentsParams) (ListDocumentsRes, error)
 	// ListDocumentsHead implements listDocumentsHead operation.
 	//
-	// Get headers for paginated list of user documents (same as GET but without body).
+	// HEAD запрос для получения заголовков списка документов.
 	//
 	// HEAD /api/docs
 	ListDocumentsHead(ctx context.Context, params ListDocumentsHeadParams) (ListDocumentsHeadRes, error)
 	// LoginUser implements loginUser operation.
 	//
-	// Authenticate user and get access token.
+	// Получение токена авторизации по логину и паролю.
 	//
-	// POST /api/auth/login
+	// POST /api/auth
 	LoginUser(ctx context.Context, req *LoginRequest) (LoginUserRes, error)
 	// LogoutUser implements logoutUser operation.
 	//
-	// Logout user and invalidate token.
+	// Завершение авторизованной сессии работы.
 	//
-	// POST /api/auth/logout
-	LogoutUser(ctx context.Context) (LogoutUserRes, error)
+	// DELETE /api/auth/{token}
+	LogoutUser(ctx context.Context, params LogoutUserParams) (LogoutUserRes, error)
 	// RegisterUser implements registerUser operation.
 	//
-	// Create a new user account.
+	// Создание нового пользователя с логином и паролем.
 	//
-	// POST /api/auth/register
+	// POST /api/register
 	RegisterUser(ctx context.Context, req *RegisterRequest) (RegisterUserRes, error)
 }
 
 // Server implements http server based on OpenAPI v3 specification and
 // calls Handler to handle requests.
 type Server struct {
-	h   Handler
-	sec SecurityHandler
+	h Handler
 	baseServer
 }
 
 // NewServer creates new Server.
-func NewServer(h Handler, sec SecurityHandler, opts ...ServerOption) (*Server, error) {
+func NewServer(h Handler, opts ...ServerOption) (*Server, error) {
 	s, err := newServerConfig(opts...).baseServer()
 	if err != nil {
 		return nil, err
 	}
 	return &Server{
 		h:          h,
-		sec:        sec,
 		baseServer: s,
 	}, nil
 }

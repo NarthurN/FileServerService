@@ -3,251 +3,22 @@
 package fileserver_v1
 
 import (
-	"fmt"
-
 	"github.com/go-faster/errors"
 
 	"github.com/ogen-go/ogen/validate"
 )
 
-func (s *BadRequestError) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if err := s.Code.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "code",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
-}
-
-func (s BadRequestErrorCode) Validate() error {
+func (s Key) Validate() error {
 	switch s {
-	case 400:
+	case "name":
 		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
-}
-
-func (s *ConflictError) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if err := s.Code.Validate(); err != nil {
-			return err
-		}
+	case "mime":
 		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "code",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
-}
-
-func (s ConflictErrorCode) Validate() error {
-	switch s {
-	case 409:
+	case "public":
 		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
-}
-
-func (s *CreateDocumentRequestMultipart) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if err := s.Meta.Validate(); err != nil {
-			return err
-		}
+	case "file":
 		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "meta",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
-}
-
-func (s *DocumentDto) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if err := (validate.String{
-			MinLength:    1,
-			MinLengthSet: true,
-			MaxLength:    255,
-			MaxLengthSet: true,
-			Email:        false,
-			Hostname:     false,
-			Regex:        nil,
-		}).Validate(string(s.Name)); err != nil {
-			return errors.Wrap(err, "string")
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "name",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if err := (validate.Int{
-			MinSet:        true,
-			Min:           0,
-			MaxSet:        false,
-			Max:           0,
-			MinExclusive:  false,
-			MaxExclusive:  false,
-			MultipleOfSet: false,
-			MultipleOf:    0,
-		}).Validate(int64(s.Size)); err != nil {
-			return errors.Wrap(err, "int")
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "size",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if err := (validate.String{
-			MinLength:    0,
-			MinLengthSet: false,
-			MaxLength:    0,
-			MaxLengthSet: false,
-			Email:        false,
-			Hostname:     false,
-			Regex:        regexMap["^[a-f0-9]{64}$"],
-		}).Validate(string(s.Checksum)); err != nil {
-			return errors.Wrap(err, "string")
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "checksum",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
-}
-
-func (s *ForbiddenError) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if err := s.Code.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "code",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
-}
-
-func (s ForbiddenErrorCode) Validate() error {
-	switch s {
-	case 403:
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
-}
-
-func (s *GetDocumentResponse) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if err := s.Document.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "document",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
-}
-
-func (s *InternalServerError) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if err := s.Code.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "code",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
-}
-
-func (s InternalServerErrorCode) Validate() error {
-	switch s {
-	case 500:
+	case "created":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -261,90 +32,36 @@ func (s *ListDocumentsResponse) Validate() error {
 
 	var failures []validate.FieldError
 	if err := func() error {
-		if s.Documents == nil {
+		if err := s.Data.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "data",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s *ListDocumentsResponseData) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if s.Docs == nil {
 			return errors.New("nil is invalid value")
 		}
-		var failures []validate.FieldError
-		for i, elem := range s.Documents {
-			if err := func() error {
-				if err := elem.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				failures = append(failures, validate.FieldError{
-					Name:  fmt.Sprintf("[%d]", i),
-					Error: err,
-				})
-			}
-		}
-		if len(failures) > 0 {
-			return &validate.Error{Fields: failures}
-		}
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "documents",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if err := (validate.Int{
-			MinSet:        true,
-			Min:           0,
-			MaxSet:        false,
-			Max:           0,
-			MinExclusive:  false,
-			MaxExclusive:  false,
-			MultipleOfSet: false,
-			MultipleOf:    0,
-		}).Validate(int64(s.Total)); err != nil {
-			return errors.Wrap(err, "int")
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "total",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if err := (validate.Int{
-			MinSet:        true,
-			Min:           1,
-			MaxSet:        false,
-			Max:           0,
-			MinExclusive:  false,
-			MaxExclusive:  false,
-			MultipleOfSet: false,
-			MultipleOf:    0,
-		}).Validate(int64(s.Page)); err != nil {
-			return errors.Wrap(err, "int")
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "page",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if err := (validate.Int{
-			MinSet:        true,
-			Min:           1,
-			MaxSet:        true,
-			Max:           100,
-			MinExclusive:  false,
-			MaxExclusive:  false,
-			MultipleOfSet: false,
-			MultipleOf:    0,
-		}).Validate(int64(s.PerPage)); err != nil {
-			return errors.Wrap(err, "int")
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "per_page",
+			Name:  "docs",
 			Error: err,
 		})
 	}
@@ -352,142 +69,6 @@ func (s *ListDocumentsResponse) Validate() error {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
-}
-
-func (s *LoginRequest) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if err := (validate.String{
-			MinLength:    3,
-			MinLengthSet: true,
-			MaxLength:    100,
-			MaxLengthSet: true,
-			Email:        false,
-			Hostname:     false,
-			Regex:        nil,
-		}).Validate(string(s.Username)); err != nil {
-			return errors.Wrap(err, "string")
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "username",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if err := (validate.String{
-			MinLength:    8,
-			MinLengthSet: true,
-			MaxLength:    128,
-			MaxLengthSet: true,
-			Email:        false,
-			Hostname:     false,
-			Regex:        nil,
-		}).Validate(string(s.Password)); err != nil {
-			return errors.Wrap(err, "string")
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "password",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
-}
-
-func (s *LoginResponse) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if err := s.User.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "user",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
-}
-
-func (s *Meta) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if err := (validate.String{
-			MinLength:    1,
-			MinLengthSet: true,
-			MaxLength:    255,
-			MaxLengthSet: true,
-			Email:        false,
-			Hostname:     false,
-			Regex:        nil,
-		}).Validate(string(s.Name)); err != nil {
-			return errors.Wrap(err, "string")
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "name",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
-}
-
-func (s *NotFoundError) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if err := s.Code.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "code",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
-}
-
-func (s NotFoundErrorCode) Validate() error {
-	switch s {
-	case 404:
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
 }
 
 func (s *RegisterRequest) Validate() error {
@@ -498,39 +79,20 @@ func (s *RegisterRequest) Validate() error {
 	var failures []validate.FieldError
 	if err := func() error {
 		if err := (validate.String{
-			MinLength:    3,
+			MinLength:    8,
 			MinLengthSet: true,
-			MaxLength:    50,
-			MaxLengthSet: true,
-			Email:        false,
-			Hostname:     false,
-			Regex:        regexMap["^[a-zA-Z0-9_-]+$"],
-		}).Validate(string(s.Username)); err != nil {
-			return errors.Wrap(err, "string")
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "username",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if err := (validate.String{
-			MinLength:    0,
-			MinLengthSet: false,
 			MaxLength:    0,
 			MaxLengthSet: false,
-			Email:        true,
+			Email:        false,
 			Hostname:     false,
-			Regex:        nil,
-		}).Validate(string(s.Email)); err != nil {
+			Regex:        regexMap["^[a-zA-Z0-9]{8,}$"],
+		}).Validate(string(s.Login)); err != nil {
 			return errors.Wrap(err, "string")
 		}
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "email",
+			Name:  "login",
 			Error: err,
 		})
 	}
@@ -538,123 +100,18 @@ func (s *RegisterRequest) Validate() error {
 		if err := (validate.String{
 			MinLength:    8,
 			MinLengthSet: true,
-			MaxLength:    128,
-			MaxLengthSet: true,
-			Email:        false,
-			Hostname:     false,
-			Regex:        nil,
-		}).Validate(string(s.Password)); err != nil {
-			return errors.Wrap(err, "string")
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "password",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
-}
-
-func (s *RegisterResponse) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if err := s.User.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "user",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
-}
-
-func (s *UnauthorizedError) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if err := s.Code.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "code",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
-}
-
-func (s UnauthorizedErrorCode) Validate() error {
-	switch s {
-	case 401:
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
-}
-
-func (s *UserDto) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if err := (validate.String{
-			MinLength:    3,
-			MinLengthSet: true,
-			MaxLength:    50,
-			MaxLengthSet: true,
-			Email:        false,
-			Hostname:     false,
-			Regex:        regexMap["^[a-zA-Z0-9_-]+$"],
-		}).Validate(string(s.Username)); err != nil {
-			return errors.Wrap(err, "string")
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "username",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if err := (validate.String{
-			MinLength:    0,
-			MinLengthSet: false,
 			MaxLength:    0,
 			MaxLengthSet: false,
-			Email:        true,
+			Email:        false,
 			Hostname:     false,
 			Regex:        nil,
-		}).Validate(string(s.Email)); err != nil {
+		}).Validate(string(s.Pswd)); err != nil {
 			return errors.Wrap(err, "string")
 		}
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "email",
+			Name:  "pswd",
 			Error: err,
 		})
 	}

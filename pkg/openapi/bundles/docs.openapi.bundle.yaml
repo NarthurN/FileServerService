@@ -2,26 +2,18 @@ openapi: 3.0.3
 info:
   title: File Server Service API
   version: 1.0.0
-  description: API для сервиса файлового хранилища с аутентификацией
+  description: API для сохранения и раздачи электронных документов
 servers:
   - url: http://localhost:8080
     description: Development server
-security:
-  - bearerAuth: []
-tags:
-  - name: auth
-    description: Authentication operations
-  - name: docs
-    description: Document management operations
 paths:
-  /api/auth/register:
+  /api/register:
     post:
       tags:
         - auth
-      summary: Register a new user
-      description: Create a new user account
+      summary: Регистрация нового пользователя
+      description: Создание нового пользователя с логином и паролем
       operationId: registerUser
-      security: []
       requestBody:
         required: true
         content:
@@ -29,97 +21,91 @@ paths:
             schema:
               $ref: '#/components/schemas/register_request'
       responses:
-        '201':
-          description: User registered successfully
+        '200':
+          description: Пользователь успешно зарегистрирован
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/register_response'
         '400':
-          description: Bad request
+          description: Некорректные параметры
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/bad_request_error'
-        '409':
-          description: User already exists
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/conflict_error'
         '500':
-          description: Internal server error
+          description: Внутренняя ошибка сервера
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/internal_server_error'
-  /api/auth/login:
+  /api/auth:
     post:
       tags:
         - auth
-      summary: Login user
-      description: Authenticate user and get access token
+      summary: Аутентификация пользователя
+      description: Получение токена авторизации по логину и паролю
       operationId: loginUser
-      security: []
       requestBody:
         required: true
         content:
-          application/json:
+          application/x-www-form-urlencoded:
             schema:
               $ref: '#/components/schemas/login_request'
       responses:
         '200':
-          description: User logged in successfully
+          description: Успешная аутентификация
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/login_response'
         '400':
-          description: Bad request
+          description: Некорректные параметры
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/bad_request_error'
         '401':
-          description: Invalid credentials
+          description: Неверные учетные данные
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/unauthorized_error'
         '500':
-          description: Internal server error
+          description: Внутренняя ошибка сервера
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/internal_server_error'
-  /api/auth/logout:
-    post:
+  /api/auth/{token}:
+    delete:
       tags:
         - auth
-      summary: Logout user
-      description: Logout user and invalidate token
+      summary: Завершение авторизованной сессии
+      description: Завершение авторизованной сессии работы
       operationId: logoutUser
-      security:
-        - bearerAuth: []
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Токен пользователя для завершения сессии
       responses:
         '200':
-          description: User logged out successfully
+          description: Сессия успешно завершена
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: User logged out successfully
+                $ref: '#/components/schemas/logout_response'
         '401':
-          description: Unauthorized
+          description: Неверный токен
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/unauthorized_error'
         '500':
-          description: Internal server error
+          description: Внутренняя ошибка сервера
           content:
             application/json:
               schema:
@@ -128,29 +114,30 @@ paths:
     get:
       tags:
         - docs
-      summary: Get list of documents
-      description: Get paginated list of user documents
+      summary: Получение списка документов
+      description: Получение списка документов с возможностью фильтрации
       operationId: listDocuments
-      security:
-        - bearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/page'
-        - $ref: '#/components/parameters/per_page'
+        - $ref: '#/components/parameters/token'
+        - $ref: '#/components/parameters/login'
+        - $ref: '#/components/parameters/key'
+        - $ref: '#/components/parameters/value'
+        - $ref: '#/components/parameters/limit'
       responses:
         '200':
-          description: List of documents
+          description: Список документов
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/list_documents_response'
         '401':
-          description: Unauthorized
+          description: Не авторизован
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/unauthorized_error'
         '500':
-          description: Internal server error
+          description: Внутренняя ошибка сервера
           content:
             application/json:
               schema:
@@ -158,42 +145,28 @@ paths:
     head:
       tags:
         - docs
-      summary: Get list of documents headers
-      description: Get headers for paginated list of user documents (same as GET but without body)
+      summary: Получение заголовков списка документов
+      description: HEAD запрос для получения заголовков списка документов
       operationId: listDocumentsHead
-      security:
-        - bearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/page'
-        - $ref: '#/components/parameters/per_page'
+        - $ref: '#/components/parameters/token'
+        - $ref: '#/components/parameters/login'
+        - $ref: '#/components/parameters/key'
+        - $ref: '#/components/parameters/value'
+        - $ref: '#/components/parameters/limit'
       responses:
         '200':
-          description: List of documents headers
-          headers:
-            X-Total-Count:
-              description: Total number of documents
-              schema:
-                type: integer
-            X-Page:
-              description: Current page number
-              schema:
-                type: integer
-            X-Per-Page:
-              description: Number of documents per page
-              schema:
-                type: integer
+          description: Заголовки списка документов
         '401':
-          description: Unauthorized
+          description: Не авторизован
         '500':
-          description: Internal server error
+          description: Внутренняя ошибка сервера
     post:
       tags:
         - docs
-      summary: Upload a new document
-      description: Upload a new document file
+      summary: Загрузка нового документа
+      description: Загрузка нового документа (файл или JSON данные)
       operationId: createDocument
-      security:
-        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -201,68 +174,71 @@ paths:
             schema:
               $ref: '#/components/schemas/create_document_request'
       responses:
-        '201':
-          description: Document uploaded successfully
+        '200':
+          description: Документ успешно загружен
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/create_document_response'
         '400':
-          description: Bad request
+          description: Некорректные параметры
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/bad_request_error'
         '401':
-          description: Unauthorized
+          description: Не авторизован
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/unauthorized_error'
         '500':
-          description: Internal server error
+          description: Внутренняя ошибка сервера
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/internal_server_error'
-  /api/docs/{doc_id}:
+  /api/docs/{id}:
     get:
       tags:
         - docs
-      summary: Get document by ID
-      description: Get document metadata by ID
-      operationId: getDocumentByID
-      security:
-        - bearerAuth: []
+      summary: Получение документа по ID
+      description: Получение конкретного документа по его идентификатору
+      operationId: getDocument
       parameters:
         - $ref: '#/components/parameters/doc_id'
+        - $ref: '#/components/parameters/token'
       responses:
         '200':
-          description: Document metadata
+          description: Документ найден
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/get_document_response'
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
         '401':
-          description: Unauthorized
+          description: Не авторизован
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/unauthorized_error'
         '403':
-          description: Forbidden - not document owner
+          description: Нет прав доступа
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/forbidden_error'
         '404':
-          description: Document not found
+          description: Документ не найден
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/not_found_error'
         '500':
-          description: Internal server error
+          description: Внутренняя ошибка сервера
           content:
             application/json:
               schema:
@@ -270,503 +246,325 @@ paths:
     head:
       tags:
         - docs
-      summary: Get document metadata headers
-      description: Get document metadata headers by ID (same as GET but without body)
-      operationId: getDocumentByIDHead
-      security:
-        - bearerAuth: []
+      summary: Получение заголовков документа по ID
+      description: HEAD запрос для получения заголовков конкретного документа
+      operationId: getDocumentHead
       parameters:
         - $ref: '#/components/parameters/doc_id'
+        - $ref: '#/components/parameters/token'
       responses:
         '200':
-          description: Document metadata headers
-          headers:
-            X-Document-ID:
-              description: Document ID
-              schema:
-                type: string
-                format: uuid
-            X-Document-Name:
-              description: Document name
-              schema:
-                type: string
-            X-Document-Size:
-              description: Document size in bytes
-              schema:
-                type: integer
-            X-Document-MIME-Type:
-              description: Document MIME type
-              schema:
-                type: string
-            X-Document-Checksum:
-              description: Document checksum
-              schema:
-                type: string
-            X-Document-Created-At:
-              description: Document creation timestamp
-              schema:
-                type: string
-                format: date-time
-            X-Document-Updated-At:
-              description: Document last update timestamp
-              schema:
-                type: string
-                format: date-time
+          description: Заголовки документа
         '401':
-          description: Unauthorized
+          description: Не авторизован
         '403':
-          description: Forbidden - not document owner
+          description: Нет прав доступа
         '404':
-          description: Document not found
+          description: Документ не найден
         '500':
-          description: Internal server error
+          description: Внутренняя ошибка сервера
     delete:
       tags:
         - docs
-      summary: Delete document by ID
-      description: Delete document by ID
-      operationId: deleteDocumentByID
-      security:
-        - bearerAuth: []
+      summary: Удаление документа
+      description: Удаление документа по его идентификатору
+      operationId: deleteDocument
       parameters:
         - $ref: '#/components/parameters/doc_id'
+        - $ref: '#/components/parameters/token'
       responses:
         '200':
-          description: Document deleted successfully
+          description: Документ успешно удален
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/delete_document_response'
         '401':
-          description: Unauthorized
+          description: Не авторизован
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/unauthorized_error'
         '403':
-          description: Forbidden - not document owner
+          description: Нет прав доступа
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/forbidden_error'
         '404':
-          description: Document not found
+          description: Документ не найден
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/not_found_error'
         '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/internal_server_error'
-  /api/docs/{doc_id}/download:
-    get:
-      tags:
-        - docs
-      summary: Download document by ID
-      description: Download document file by ID
-      operationId: downloadDocumentByID
-      security:
-        - bearerAuth: []
-      parameters:
-        - $ref: '#/components/parameters/doc_id'
-      responses:
-        '200':
-          description: Document file
-          content:
-            application/octet-stream:
-              schema:
-                type: string
-                format: binary
-          headers:
-            Content-Disposition:
-              description: File name for download
-              schema:
-                type: string
-                example: attachment; filename="example.pdf"
-            Content-Type:
-              description: File MIME type
-              schema:
-                type: string
-                example: application/pdf
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/unauthorized_error'
-        '403':
-          description: Forbidden - not document owner
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/forbidden_error'
-        '404':
-          description: Document not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/not_found_error'
-        '500':
-          description: Internal server error
+          description: Внутренняя ошибка сервера
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/internal_server_error'
 components:
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
   schemas:
-    User:
-      $ref: '#/components/schemas/user_dto'
-    Document:
+    RegisterRequest:
+      $ref: '#/components/schemas/register_request'
+    LoginRequest:
+      $ref: '#/components/schemas/login_request'
+    CreateDocumentRequest:
+      $ref: '#/components/schemas/create_document_request'
+    Meta:
+      $ref: '#/components/schemas/meta'
+    RegisterResponse:
+      $ref: '#/components/schemas/register_response'
+    LoginResponse:
+      $ref: '#/components/schemas/login_response'
+    CreateDocumentResponse:
+      $ref: '#/components/schemas/create_document_response'
+    ListDocumentsResponse:
+      $ref: '#/components/schemas/list_documents_response'
+    GetDocumentResponse:
+      $ref: '#/components/schemas/get_document_response'
+    DeleteDocumentResponse:
+      $ref: '#/components/schemas/delete_document_response'
+    LogoutResponse:
+      $ref: '#/components/schemas/logout_response'
+    DocumentDTO:
       $ref: '#/components/schemas/document_dto'
-    Error:
-      $ref: '#/components/schemas/generic_error'
+    UserDTO:
+      $ref: '#/components/schemas/user_dto'
+    BadRequestError:
+      $ref: '#/components/schemas/bad_request_error'
+    UnauthorizedError:
+      $ref: '#/components/schemas/unauthorized_error'
+    ForbiddenError:
+      $ref: '#/components/schemas/forbidden_error'
+    NotFoundError:
+      $ref: '#/components/schemas/not_found_error'
+    MethodNotAllowedError:
+      $ref: '#/components/schemas/method_not_allowed_error'
+    InternalServerError:
+      $ref: '#/components/schemas/internal_server_error'
+    NotImplementedError:
+      $ref: '#/components/schemas/not_implemented_error'
     register_request:
       type: object
       properties:
-        username:
+        token:
           type: string
-          description: Username for the new user
-          minLength: 3
-          maxLength: 50
-          pattern: ^[a-zA-Z0-9_-]+$
-        email:
+          description: Токен администратора (фиксированный, задается в конфиге)
+          example: admin-token-123
+        login:
           type: string
-          format: email
-          description: Email address for the new user
-        password:
-          type: string
-          description: Password for the new user
+          description: Логин нового пользователя (минимум 8 символов, латиница и цифры)
+          pattern: ^[a-zA-Z0-9]{8,}$
           minLength: 8
-          maxLength: 128
-          format: password
+          example: testuser123
+        pswd:
+          type: string
+          description: |
+            Пароль нового пользователя:
+            - минимум 8 символов
+            - минимум 2 буквы в разных регистрах
+            - минимум 1 цифра
+            - минимум 1 символ (не буква и не цифра)
+          minLength: 8
+          example: TestPass123!
       required:
-        - username
-        - email
-        - password
-      example:
-        username: john_doe
-        email: john@example.com
-        password: SecurePassword123!
-    user_dto:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-          description: Unique identifier for the user
-        username:
-          type: string
-          description: Username for authentication
-          minLength: 3
-          maxLength: 50
-          pattern: ^[a-zA-Z0-9_-]+$
-        email:
-          type: string
-          format: email
-          description: User's email address
-        created_at:
-          type: string
-          format: date-time
-          description: Timestamp when user was created
-        updated_at:
-          type: string
-          format: date-time
-          description: Timestamp when user was last updated
-      required:
-        - id
-        - username
-        - email
-        - created_at
-        - updated_at
-      example:
-        id: 550e8400-e29b-41d4-a716-446655440000
-        username: john_doe
-        email: john@example.com
-        created_at: '2023-01-01T12:00:00Z'
-        updated_at: '2023-01-01T12:00:00Z'
+        - token
+        - login
+        - pswd
     register_response:
       type: object
       properties:
-        user:
-          $ref: '#/components/schemas/user_dto'
-        access_token:
-          type: string
-          description: JWT access token
-        refresh_token:
-          type: string
-          description: JWT refresh token
-        expires_in:
-          type: integer
-          description: Token expiration time in seconds
-          example: 3600
+        response:
+          type: object
+          properties:
+            login:
+              type: string
+              description: Логин зарегистрированного пользователя
+              example: test
+          required:
+            - login
       required:
-        - user
-        - access_token
-        - refresh_token
-        - expires_in
-      example:
-        user:
-          id: 550e8400-e29b-41d4-a716-446655440000
-          username: john_doe
-          email: john@example.com
-          created_at: '2023-01-01T12:00:00Z'
-          updated_at: '2023-01-01T12:00:00Z'
-        access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-        refresh_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-        expires_in: 3600
+        - response
     bad_request_error:
       type: object
       properties:
-        code:
-          type: integer
-          enum:
-            - 400
-          description: Код ошибки
-          example: 400
-        message:
-          type: string
-          description: Сообщение об ошибке
-          example: Invalid request data
+        error:
+          type: object
+          properties:
+            code:
+              type: integer
+              example: 400
+            text:
+              type: string
+              example: Некорректные параметры
+          required:
+            - code
+            - text
       required:
-        - code
-        - message
-      example:
-        code: 400
-        message: Invalid request data
-    conflict_error:
-      type: object
-      properties:
-        code:
-          type: integer
-          enum:
-            - 409
-          description: Код ошибки
-          example: 409
-        message:
-          type: string
-          description: Сообщение об ошибке
-          example: Resource already exists
-      required:
-        - code
-        - message
-      example:
-        code: 409
-        message: Resource already exists
+        - error
     internal_server_error:
       type: object
       properties:
-        code:
-          type: integer
-          enum:
-            - 500
-          description: Код ошибки
-          example: 500
-        message:
-          type: string
-          description: Сообщение об ошибке
-          example: Internal server error
+        error:
+          type: object
+          properties:
+            code:
+              type: integer
+              example: 500
+            text:
+              type: string
+              example: Внутренняя ошибка сервера
+          required:
+            - code
+            - text
       required:
-        - code
-        - message
-      example:
-        code: 500
-        message: Internal server error
+        - error
     login_request:
       type: object
       properties:
-        username:
+        login:
           type: string
-          description: Username or email for authentication
-          minLength: 3
-          maxLength: 100
-        password:
+          description: Логин пользователя
+          example: testuser123
+        pswd:
           type: string
-          description: User password
-          minLength: 8
-          maxLength: 128
-          format: password
+          description: Пароль пользователя
+          example: TestPass123!
       required:
-        - username
-        - password
-      example:
-        username: john_doe
-        password: SecurePassword123!
+        - login
+        - pswd
     login_response:
       type: object
       properties:
-        user:
-          $ref: '#/components/schemas/user_dto'
-        access_token:
-          type: string
-          description: JWT access token
-        refresh_token:
-          type: string
-          description: JWT refresh token
-        expires_in:
-          type: integer
-          description: Token expiration time in seconds
-          example: 3600
+        response:
+          type: object
+          properties:
+            token:
+              type: string
+              description: Токен авторизации
+              example: sfuqwejqjoiu93e29
+          required:
+            - token
       required:
-        - user
-        - access_token
-        - refresh_token
-        - expires_in
-      example:
-        user:
-          id: 550e8400-e29b-41d4-a716-446655440000
-          username: john_doe
-          email: john@example.com
-          created_at: '2023-01-01T12:00:00Z'
-          updated_at: '2023-01-01T12:00:00Z'
-        access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-        refresh_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-        expires_in: 3600
+        - response
     unauthorized_error:
       type: object
       properties:
-        code:
-          type: integer
-          enum:
-            - 401
-          description: Код ошибки
-          example: 401
-        message:
-          type: string
-          description: Сообщение об ошибке
-          example: Authentication required
+        error:
+          type: object
+          properties:
+            code:
+              type: integer
+              example: 401
+            text:
+              type: string
+              example: Не авторизован
+          required:
+            - code
+            - text
       required:
-        - code
-        - message
-      example:
-        code: 401
-        message: Authentication required
+        - error
+    logout_response:
+      type: object
+      properties:
+        response:
+          type: object
+          description: Результат завершения сессии (токен -> true)
+          additionalProperties:
+            type: boolean
+          example:
+            qwdj1q4o34u34ih759ou1: true
+      required:
+        - response
     document_dto:
       type: object
       properties:
         id:
           type: string
-          format: uuid
-          description: Unique identifier for the document
+          description: Уникальный идентификатор документа
+          example: qwdj1q4o34u34ih759ou1
         name:
           type: string
-          description: Document name
-          minLength: 1
-          maxLength: 255
-        size:
-          type: integer
-          format: int64
-          description: Document size in bytes
-          minimum: 0
-        mime_type:
+          description: Имя документа
+          example: photo.jpg
+        mime:
           type: string
-          description: Document MIME type
-          example: application/pdf
-        checksum:
+          description: MIME тип документа
+          example: image/jpg
+        file:
+          type: boolean
+          description: Является ли документ файлом
+          example: true
+        public:
+          type: boolean
+          description: Является ли документ публичным
+          example: false
+        created:
           type: string
-          description: Document checksum (SHA256)
-          pattern: ^[a-f0-9]{64}$
-        owner_id:
-          type: string
-          format: uuid
-          description: ID of the user who owns the document
-        created_at:
-          type: string
-          format: date-time
-          description: Timestamp when document was uploaded
-        updated_at:
-          type: string
-          format: date-time
-          description: Timestamp when document was last updated
+          description: Дата и время создания документа
+          example: '2018-12-24 10:30:56'
+        grant:
+          type: array
+          items:
+            type: string
+          description: Список логинов пользователей с доступом
+          example:
+            - login1
+            - login2
       required:
         - id
         - name
-        - size
-        - mime_type
-        - checksum
-        - owner_id
-        - created_at
-        - updated_at
-      example:
-        id: 550e8400-e29b-41d4-a716-446655440001
-        name: example.pdf
-        size: 1024
-        mime_type: application/pdf
-        checksum: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-        owner_id: 550e8400-e29b-41d4-a716-446655440000
-        created_at: '2023-01-01T12:00:00Z'
-        updated_at: '2023-01-01T12:00:00Z'
+        - mime
+        - file
+        - public
+        - created
     list_documents_response:
       type: object
       properties:
-        documents:
-          type: array
-          items:
-            $ref: '#/components/schemas/document_dto'
-          description: List of documents
-        total:
-          type: integer
-          description: Total number of documents
-          minimum: 0
-        page:
-          type: integer
-          description: Current page number
-          minimum: 1
-        per_page:
-          type: integer
-          description: Number of documents per page
-          minimum: 1
-          maximum: 100
+        data:
+          type: object
+          properties:
+            docs:
+              type: array
+              items:
+                $ref: '#/components/schemas/document_dto'
+              description: Список документов
+          required:
+            - docs
       required:
-        - documents
-        - total
-        - page
-        - per_page
-      example:
-        documents:
-          - id: 550e8400-e29b-41d4-a716-446655440001
-            name: example.pdf
-            size: 1024
-            mime_type: application/pdf
-            checksum: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-            owner_id: 550e8400-e29b-41d4-a716-446655440000
-            created_at: '2023-01-01T12:00:00Z'
-            updated_at: '2023-01-01T12:00:00Z'
-        total: 1
-        page: 1
-        per_page: 10
+        - data
     meta:
       type: object
       properties:
         name:
           type: string
-          description: Document name
-          minLength: 1
-          maxLength: 255
+          description: Имя документа
+          example: photo.jpg
         file:
           type: boolean
-          description: Is this part a file (true for binary upload)
+          description: Является ли документ файлом
+          example: true
         public:
           type: boolean
-          description: Whether document is publicly accessible
+          description: Является ли документ публичным
+          example: false
         token:
           type: string
-          description: Security token for the upload request
+          description: Токен авторизации
+          example: sfuqwejqjoiu93e29
         mime:
           type: string
-          description: MIME type of the document
+          description: MIME тип документа
+          example: image/jpg
         grant:
           type: array
-          description: List of user logins that have access
           items:
             type: string
+          description: Список логинов пользователей, которым предоставлен доступ
+          example:
+            - login1
+            - login2
       required:
         - name
         - file
@@ -780,28 +578,19 @@ components:
           $ref: '#/components/schemas/meta'
         json:
           type: object
-          description: Arbitrary document JSON data
+          description: JSON данные документа (опционально)
           additionalProperties: true
+          example:
+            key1: value1
+            key2: 123
+            key3:
+              nested: data
         file:
           type: string
           format: binary
-          description: File content
+          description: Файл документа (опционально)
       required:
         - meta
-        - file
-      example:
-        meta:
-          name: photo.jpg
-          file: true
-          public: false
-          token: sfuqwejqjoiu93e29
-          mime: image/jpg
-          grant:
-            - login1
-            - login2
-        json:
-          key: value
-        file: (binary)
     create_document_response:
       type: object
       properties:
@@ -810,134 +599,199 @@ components:
           properties:
             json:
               type: object
+              description: JSON данные документа (если были переданы)
               additionalProperties: true
-              description: Document JSON data
             file:
               type: string
-              description: Document file name
+              description: Имя загруженного файла
+              example: photo.jpg
           required:
             - file
       required:
         - data
-      example:
-        data:
-          json:
-            key: value
-          file: photo.jpg
     get_document_response:
       type: object
       properties:
-        document:
-          $ref: '#/components/schemas/document_dto'
+        data:
+          type: object
+          description: JSON данные документа
+          additionalProperties: true
+          example:
+            key1: value1
+            key2: 123
+            nested:
+              data: example
       required:
-        - document
-      example:
-        document:
-          id: 550e8400-e29b-41d4-a716-446655440001
-          name: example.pdf
-          size: 1024
-          mime_type: application/pdf
-          checksum: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-          owner_id: 550e8400-e29b-41d4-a716-446655440000
-          created_at: '2023-01-01T12:00:00Z'
-          updated_at: '2023-01-01T12:00:00Z'
+        - data
     forbidden_error:
       type: object
       properties:
-        code:
-          type: integer
-          enum:
-            - 403
-          description: Код ошибки
-          example: 403
-        message:
-          type: string
-          description: Сообщение об ошибке
-          example: Access denied
+        error:
+          type: object
+          properties:
+            code:
+              type: integer
+              example: 403
+            text:
+              type: string
+              example: Нет прав доступа
+          required:
+            - code
+            - text
       required:
-        - code
-        - message
-      example:
-        code: 403
-        message: Access denied
+        - error
     not_found_error:
       type: object
       properties:
-        code:
-          type: integer
-          enum:
-            - 404
-          description: Код ошибки
-          example: 404
-        message:
-          type: string
-          description: Сообщение об ошибке
-          example: Resource not found
+        error:
+          type: object
+          properties:
+            code:
+              type: integer
+              example: 404
+            text:
+              type: string
+              example: Ресурс не найден
+          required:
+            - code
+            - text
       required:
-        - code
-        - message
-      example:
-        code: 404
-        message: Resource not found
+        - error
     delete_document_response:
       type: object
       properties:
-        message:
-          type: string
-          description: Success message
-          example: Document deleted successfully
+        response:
+          type: object
+          description: Результат удаления документа (ID документа -> true)
+          additionalProperties:
+            type: boolean
+          example:
+            qwdj1q4o34u34ih759ou1: true
       required:
-        - message
-      example:
-        message: Document deleted successfully
-    generic_error:
+        - response
+    user_dto:
       type: object
       properties:
-        code:
-          type: integer
-          description: Код ошибки
-          example: 500
-        message:
+        id:
           type: string
-          description: Сообщение об ошибке
-          example: An internal server error occurred
+          description: Уникальный идентификатор пользователя
+          example: user-123
+        login:
+          type: string
+          description: Логин пользователя
+          example: testuser123
+        created:
+          type: string
+          format: date-time
+          description: Дата и время создания пользователя
+          example: '2023-12-24T10:30:56Z'
       required:
-        - code
-        - message
-      example:
-        code: 500
-        message: An internal server error occurred
+        - id
+        - login
+        - created
+    method_not_allowed_error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: integer
+              example: 405
+            text:
+              type: string
+              example: Неверный метод запроса
+          required:
+            - code
+            - text
+      required:
+        - error
+    not_implemented_error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: integer
+              example: 501
+            text:
+              type: string
+              example: Метод не реализован
+          required:
+            - code
+            - text
+      required:
+        - error
   parameters:
-    page:
-      name: page
+    DocId:
+      $ref: '#/components/parameters/doc_id'
+    Token:
+      $ref: '#/components/parameters/token'
+    Login:
+      $ref: '#/components/parameters/login'
+    Key:
+      $ref: '#/components/parameters/key'
+    Value:
+      $ref: '#/components/parameters/value'
+    Limit:
+      $ref: '#/components/parameters/limit'
+    token:
+      name: token
+      in: query
+      required: true
+      schema:
+        type: string
+      description: Токен авторизации
+      example: sfuqwejqjoiu93e29
+    login:
+      name: login
+      in: query
+      required: false
+      schema:
+        type: string
+      description: Логин пользователя для фильтрации (опционально, если не указан - возвращаются собственные документы)
+      example: testuser123
+    key:
+      name: key
+      in: query
+      required: false
+      schema:
+        type: string
+        enum:
+          - name
+          - mime
+          - public
+          - file
+          - created
+      description: Имя колонки для фильтрации
+      example: name
+    value:
+      name: value
+      in: query
+      required: false
+      schema:
+        type: string
+      description: Значение фильтра
+      example: photo.jpg
+    limit:
+      name: limit
       in: query
       required: false
       schema:
         type: integer
         minimum: 1
-        default: 1
-      description: Page number for pagination
-      example: 1
-    per_page:
-      name: per_page
-      in: query
-      required: false
-      schema:
-        type: integer
-        minimum: 1
-        maximum: 100
-        default: 10
-      description: Number of documents per page
+        maximum: 1000
+      description: Количество документов в списке
       example: 10
     doc_id:
-      name: doc_id
+      name: id
       in: path
       required: true
       schema:
         type: string
-        format: uuid
-      description: Unique identifier for the document
-      example: 550e8400-e29b-41d4-a716-446655440001
+      description: Уникальный идентификатор документа
+      example: qwdj1q4o34u34ih759ou1
 x-ogen:
   target: ./pkg/generated/api/fileserver/v1
   package: fileserver_v1

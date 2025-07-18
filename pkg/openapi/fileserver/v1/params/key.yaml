@@ -1,0 +1,8 @@
+name: key
+in: query
+required: false
+schema:
+  type: string
+  enum: [name, mime, public, file, created]
+description: Имя колонки для фильтрации
+example: "name"

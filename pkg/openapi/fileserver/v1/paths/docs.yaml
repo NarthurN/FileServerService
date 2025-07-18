@@ -1,72 +1,61 @@
 get:
   tags:
     - docs
-  summary: Get list of documents
-  description: Get paginated list of user documents
+  summary: Получение списка документов
+  description: Получение списка документов с возможностью фильтрации
   operationId: listDocuments
-  security:
-    - bearerAuth: []
   parameters:
-    - $ref: "../params/page.yaml"
-    - $ref: "../params/per_page.yaml"
+    - $ref: "../params/token.yaml"
+    - $ref: "../params/login.yaml"
+    - $ref: "../params/key.yaml"
+    - $ref: "../params/value.yaml"
+    - $ref: "../params/limit.yaml"
   responses:
     '200':
-      description: List of documents
+      description: Список документов
       content:
         application/json:
           schema:
             $ref: "../components/list_documents_response.yaml"
     '401':
-      description: Unauthorized
+      description: Не авторизован
       content:
         application/json:
           schema:
             $ref: "../components/errors/unauthorized_error.yaml"
     '500':
-      description: Internal server error
+      description: Внутренняя ошибка сервера
       content:
         application/json:
           schema:
             $ref: "../components/errors/internal_server_error.yaml"
+
 head:
   tags:
     - docs
-  summary: Get list of documents headers
-  description: Get headers for paginated list of user documents (same as GET but without body)
+  summary: Получение заголовков списка документов
+  description: HEAD запрос для получения заголовков списка документов
   operationId: listDocumentsHead
-  security:
-    - bearerAuth: []
   parameters:
-    - $ref: "../params/page.yaml"
-    - $ref: "../params/per_page.yaml"
+    - $ref: "../params/token.yaml"
+    - $ref: "../params/login.yaml"
+    - $ref: "../params/key.yaml"
+    - $ref: "../params/value.yaml"
+    - $ref: "../params/limit.yaml"
   responses:
     '200':
-      description: List of documents headers
-      headers:
-        X-Total-Count:
-          description: Total number of documents
-          schema:
-            type: integer
-        X-Page:
-          description: Current page number
-          schema:
-            type: integer
-        X-Per-Page:
-          description: Number of documents per page
-          schema:
-            type: integer
+      description: Заголовки списка документов
     '401':
-      description: Unauthorized
+      description: Не авторизован
     '500':
-      description: Internal server error
+      description: Внутренняя ошибка сервера
+
 post:
   tags:
     - docs
-  summary: Upload a new document
-  description: Upload a new document file
+  summary: Загрузка нового документа
+  description: Загрузка нового документа (файл или JSON данные)
   operationId: createDocument
-  security:
-    - bearerAuth: []
   requestBody:
     required: true
     content:
@@ -74,26 +63,26 @@ post:
         schema:
           $ref: "../components/create_document_request.yaml"
   responses:
-    '201':
-      description: Document uploaded successfully
+    '200':
+      description: Документ успешно загружен
       content:
         application/json:
           schema:
             $ref: "../components/create_document_response.yaml"
     '400':
-      description: Bad request
+      description: Некорректные параметры
       content:
         application/json:
           schema:
             $ref: "../components/errors/bad_request_error.yaml"
     '401':
-      description: Unauthorized
+      description: Не авторизован
       content:
         application/json:
           schema:
             $ref: "../components/errors/unauthorized_error.yaml"
     '500':
-      description: Internal server error
+      description: Внутренняя ошибка сервера
       content:
         application/json:
           schema:

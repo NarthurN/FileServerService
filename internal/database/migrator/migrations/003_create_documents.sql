@@ -1,7 +1,7 @@
 -- +goose Up
 CREATE TABLE documents (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    id VARCHAR(36) PRIMARY KEY DEFAULT uuid_generate_v4()::text,
+    user_id VARCHAR(36) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
     mime_type VARCHAR(255),
     file_path VARCHAR(500),

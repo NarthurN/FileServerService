@@ -4,25 +4,16 @@ properties:
     $ref: "./meta.yaml"
   json:
     type: object
-    description: Arbitrary document JSON data
+    description: JSON данные документа (опционально)
     additionalProperties: true
+    example:
+      key1: "value1"
+      key2: 123
+      key3:
+        nested: "data"
   file:
     type: string
     format: binary
-    description: File content
+    description: Файл документа (опционально)
 required:
   - meta
-  - file
-example:
-  meta:
-    name: "photo.jpg"
-    file: true
-    public: false
-    token: "sfuqwejqjoiu93e29"
-    mime: "image/jpg"
-    grant:
-      - "login1"
-      - "login2"
-  json:
-    key: "value"
-  file: (binary)

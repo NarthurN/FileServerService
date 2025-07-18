@@ -1,0 +1,11 @@
+type: object
+properties:
+  response:
+    type: object
+    description: Результат завершения сессии (токен -> true)
+    additionalProperties:
+      type: boolean
+    example:
+      "qwdj1q4o34u34ih759ou1": true
+required:
+  - response

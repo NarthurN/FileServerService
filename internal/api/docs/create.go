@@ -3,6 +3,7 @@ package docs
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"time"
@@ -17,11 +18,35 @@ import (
 
 // CreateDocument - создание документа
 func (a *api) CreateDocument(ctx context.Context, req *fileserverV1.CreateDocumentRequestMultipart) (fileserverV1.CreateDocumentRes, error) {
+	// 1. ВАЖНО: Сначала валидируем токен из meta
+	token := req.Meta.Token
+	if token == "" {
+		return &fileserverV1.UnauthorizedError{
+			Error: fileserverV1.UnauthorizedErrorError{
+				Code: 401,
+				Text: "token is required",
+			},
+		}, nil
+	}
+
+	// Валидация токена и получение UserID
+	userID, err := a.validateToken(token)
+	if err != nil {
+		return &fileserverV1.UnauthorizedError{
+			Error: fileserverV1.UnauthorizedErrorError{
+				Code: 401,
+				Text: fmt.Sprintf("invalid token: %v", err),
+			},
+		}, nil
+	}
+
 	name := req.Meta.Name
 	if name == "" {
 		return &fileserverV1.BadRequestError{
-			Code:    400,
-			Message: "name is required",
+			Error: fileserverV1.BadRequestErrorError{
+				Code: 400,
+				Text: "name is required",
+			},
 		}, nil
 	}
 
@@ -33,28 +58,47 @@ func (a *api) CreateDocument(ctx context.Context, req *fileserverV1.CreateDocume
 	storageDir := filepath.Join("bin", "storage")
 	if err := os.MkdirAll(storageDir, 0o750); err != nil {
 		return &fileserverV1.InternalServerError{
-			Code:    500,
-			Message: fmt.Sprintf("create storage dir: %v", err),
+			Error: fileserverV1.InternalServerErrorError{
+				Code: 500,
+				Text: fmt.Sprintf("create storage dir: %v", err),
+			},
 		}, nil
 	}
 	dstPath := filepath.Join(storageDir, docID.String())
 
-	dstFile, err := os.Create(dstPath)
-	if err != nil {
-		return &fileserverV1.InternalServerError{
-			Code:    500,
-			Message: fmt.Sprintf("create dst file: %v", err),
-		}, nil
+	// 2. ИСПРАВЛЕНИЕ: Копируем файл только если он есть
+	var actualFilePath string
+	if fileData, ok := req.File.Get(); ok {
+		dstFile, err := os.Create(dstPath)
+		if err != nil {
+			return &fileserverV1.InternalServerError{
+				Error: fileserverV1.InternalServerErrorError{
+					Code: 500,
+					Text: fmt.Sprintf("create dst file: %v", err),
+				},
+			}, nil
+		}
+		defer dstFile.Close()
+
+		// Копируем содержимое файла
+		if _, err := io.Copy(dstFile, fileData.File); err != nil {
+			return &fileserverV1.InternalServerError{
+				Error: fileserverV1.InternalServerErrorError{
+					Code: 500,
+					Text: fmt.Sprintf("copy file content: %v", err),
+				},
+			}, nil
+		}
+		actualFilePath = dstPath
 	}
-	defer dstFile.Close()
 
 	// Build business model
 	doc := buisnesModel.Document{
 		ID:        docID.String(),
-		UserID:    "", // TODO: extract from auth context
+		UserID:    userID, // 3. ИСПРАВЛЕНИЕ: Теперь используем реальный UserID
 		Name:      name,
 		MimeType:  meta.Mime,
-		FilePath:  dstPath,
+		FilePath:  actualFilePath, // 4. ИСПРАВЛЕНИЕ: Путь только если файл есть
 		IsFile:    meta.File,
 		IsPublic:  meta.Public,
 		JSONData:  nil, // will be set below if json provided
@@ -70,8 +114,10 @@ func (a *api) CreateDocument(ctx context.Context, req *fileserverV1.CreateDocume
 			var v any
 			if err := json.Unmarshal(raw, &v); err != nil {
 				return &fileserverV1.BadRequestError{
-					Code:    400,
-					Message: fmt.Sprintf("invalid json: %v", err),
+					Error: fileserverV1.BadRequestErrorError{
+						Code: 400,
+						Text: fmt.Sprintf("invalid json: %v", err),
+					},
 				}, nil
 			}
 			bizJSON[k] = v
@@ -79,11 +125,23 @@ func (a *api) CreateDocument(ctx context.Context, req *fileserverV1.CreateDocume
 		doc.JSONData = bizJSON
 	}
 
+	// 5. ДОБАВЛЕНИЕ: Валидация - документ должен иметь либо файл, либо JSON
+	if !meta.File && doc.JSONData == nil {
+		return &fileserverV1.BadRequestError{
+			Error: fileserverV1.BadRequestErrorError{
+				Code: 400,
+				Text: "document must have either file or json data",
+			},
+		}, nil
+	}
+
 	// Сохраняем бизнес-сущность
 	if _, err := a.docsService.CreateDocument(ctx, doc); err != nil {
 		return &fileserverV1.InternalServerError{
-			Code:    500,
-			Message: fmt.Sprintf("create document: %v", err),
+			Error: fileserverV1.InternalServerErrorError{
+				Code: 500,
+				Text: fmt.Sprintf("create document: %v", err),
+			},
 		}, nil
 	}
 
@@ -100,4 +158,20 @@ func (a *api) CreateDocument(ctx context.Context, req *fileserverV1.CreateDocume
 	}
 
 	return resp, nil
+}
+
+// validateToken - валидация токена (нужно реализовать)
+func (a *api) validateToken(token string) (string, error) {
+	// TODO: Реализовать валидацию токена
+	// Это может быть:
+	// 1. Проверка в базе данных токенов
+	// 2. Декодирование JWT токена
+	// 3. Проверка в Redis/кеше
+
+	// Пример заглушки:
+	if token == "valid-token-123" {
+		return "user-123", nil
+	}
+
+	return "", fmt.Errorf("invalid token")
 }

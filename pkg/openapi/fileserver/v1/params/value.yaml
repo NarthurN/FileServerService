@@ -1,0 +1,7 @@
+name: value
+in: query
+required: false
+schema:
+  type: string
+description: Значение фильтра
+example: "photo.jpg"

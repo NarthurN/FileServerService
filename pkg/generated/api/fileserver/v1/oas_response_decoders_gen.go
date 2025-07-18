@@ -7,22 +7,18 @@ import (
 	"io"
 	"mime"
 	"net/http"
-	"time"
 
 	"github.com/go-faster/errors"
 	"github.com/go-faster/jx"
-	"github.com/google/uuid"
 
-	"github.com/ogen-go/ogen/conv"
 	"github.com/ogen-go/ogen/ogenerrors"
-	"github.com/ogen-go/ogen/uri"
 	"github.com/ogen-go/ogen/validate"
 )
 
 func decodeCreateDocumentResponse(resp *http.Response) (res CreateDocumentRes, _ error) {
 	switch resp.StatusCode {
-	case 201:
-		// Code 201.
+	case 200:
+		// Code 200.
 		ct, _, err := mime.ParseMediaType(resp.Header.Get("Content-Type"))
 		if err != nil {
 			return res, errors.Wrap(err, "parse media type")
@@ -87,15 +83,6 @@ func decodeCreateDocumentResponse(resp *http.Response) (res CreateDocumentRes, _
 				}
 				return res, err
 			}
-			// Validate response.
-			if err := func() error {
-				if err := response.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return res, errors.Wrap(err, "validate")
-			}
 			return &response, nil
 		default:
 			return res, validate.InvalidContentType(ct)
@@ -130,15 +117,6 @@ func decodeCreateDocumentResponse(resp *http.Response) (res CreateDocumentRes, _
 					Err:         err,
 				}
 				return res, err
-			}
-			// Validate response.
-			if err := func() error {
-				if err := response.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return res, errors.Wrap(err, "validate")
 			}
 			return &response, nil
 		default:
@@ -175,15 +153,6 @@ func decodeCreateDocumentResponse(resp *http.Response) (res CreateDocumentRes, _
 				}
 				return res, err
 			}
-			// Validate response.
-			if err := func() error {
-				if err := response.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return res, errors.Wrap(err, "validate")
-			}
 			return &response, nil
 		default:
 			return res, validate.InvalidContentType(ct)
@@ -192,7 +161,7 @@ func decodeCreateDocumentResponse(resp *http.Response) (res CreateDocumentRes, _
 	return res, validate.UnexpectedStatusCode(resp.StatusCode)
 }
 
-func decodeDeleteDocumentByIDResponse(resp *http.Response) (res DeleteDocumentByIDRes, _ error) {
+func decodeDeleteDocumentResponse(resp *http.Response) (res DeleteDocumentRes, _ error) {
 	switch resp.StatusCode {
 	case 200:
 		// Code 200.
@@ -260,15 +229,6 @@ func decodeDeleteDocumentByIDResponse(resp *http.Response) (res DeleteDocumentBy
 				}
 				return res, err
 			}
-			// Validate response.
-			if err := func() error {
-				if err := response.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return res, errors.Wrap(err, "validate")
-			}
 			return &response, nil
 		default:
 			return res, validate.InvalidContentType(ct)
@@ -303,15 +263,6 @@ func decodeDeleteDocumentByIDResponse(resp *http.Response) (res DeleteDocumentBy
 					Err:         err,
 				}
 				return res, err
-			}
-			// Validate response.
-			if err := func() error {
-				if err := response.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return res, errors.Wrap(err, "validate")
 			}
 			return &response, nil
 		default:
@@ -348,15 +299,6 @@ func decodeDeleteDocumentByIDResponse(resp *http.Response) (res DeleteDocumentBy
 				}
 				return res, err
 			}
-			// Validate response.
-			if err := func() error {
-				if err := response.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return res, errors.Wrap(err, "validate")
-			}
 			return &response, nil
 		default:
 			return res, validate.InvalidContentType(ct)
@@ -392,15 +334,6 @@ func decodeDeleteDocumentByIDResponse(resp *http.Response) (res DeleteDocumentBy
 				}
 				return res, err
 			}
-			// Validate response.
-			if err := func() error {
-				if err := response.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return res, errors.Wrap(err, "validate")
-			}
 			return &response, nil
 		default:
 			return res, validate.InvalidContentType(ct)
@@ -409,248 +342,7 @@ func decodeDeleteDocumentByIDResponse(resp *http.Response) (res DeleteDocumentBy
 	return res, validate.UnexpectedStatusCode(resp.StatusCode)
 }
 
-func decodeDownloadDocumentByIDResponse(resp *http.Response) (res DownloadDocumentByIDRes, _ error) {
-	switch resp.StatusCode {
-	case 200:
-		// Code 200.
-		ct, _, err := mime.ParseMediaType(resp.Header.Get("Content-Type"))
-		if err != nil {
-			return res, errors.Wrap(err, "parse media type")
-		}
-		switch {
-		case ct == "application/octet-stream":
-			reader := resp.Body
-			b, err := io.ReadAll(reader)
-			if err != nil {
-				return res, err
-			}
-
-			response := DownloadDocumentByIDOK{Data: bytes.NewReader(b)}
-			var wrapper DownloadDocumentByIDOKHeaders
-			wrapper.Response = response
-			h := uri.NewHeaderDecoder(resp.Header)
-			// Parse "Content-Disposition" header.
-			{
-				cfg := uri.HeaderParameterDecodingConfig{
-					Name:    "Content-Disposition",
-					Explode: false,
-				}
-				if err := func() error {
-					if err := h.HasParam(cfg); err == nil {
-						if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-							var wrapperDotContentDispositionVal string
-							if err := func() error {
-								val, err := d.DecodeValue()
-								if err != nil {
-									return err
-								}
-
-								c, err := conv.ToString(val)
-								if err != nil {
-									return err
-								}
-
-								wrapperDotContentDispositionVal = c
-								return nil
-							}(); err != nil {
-								return err
-							}
-							wrapper.ContentDisposition.SetTo(wrapperDotContentDispositionVal)
-							return nil
-						}); err != nil {
-							return err
-						}
-					}
-					return nil
-				}(); err != nil {
-					return res, errors.Wrap(err, "parse Content-Disposition header")
-				}
-			}
-			return &wrapper, nil
-		default:
-			return res, validate.InvalidContentType(ct)
-		}
-	case 401:
-		// Code 401.
-		ct, _, err := mime.ParseMediaType(resp.Header.Get("Content-Type"))
-		if err != nil {
-			return res, errors.Wrap(err, "parse media type")
-		}
-		switch {
-		case ct == "application/json":
-			buf, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return res, err
-			}
-			d := jx.DecodeBytes(buf)
-
-			var response UnauthorizedError
-			if err := func() error {
-				if err := response.Decode(d); err != nil {
-					return err
-				}
-				if err := d.Skip(); err != io.EOF {
-					return errors.New("unexpected trailing data")
-				}
-				return nil
-			}(); err != nil {
-				err = &ogenerrors.DecodeBodyError{
-					ContentType: ct,
-					Body:        buf,
-					Err:         err,
-				}
-				return res, err
-			}
-			// Validate response.
-			if err := func() error {
-				if err := response.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return res, errors.Wrap(err, "validate")
-			}
-			return &response, nil
-		default:
-			return res, validate.InvalidContentType(ct)
-		}
-	case 403:
-		// Code 403.
-		ct, _, err := mime.ParseMediaType(resp.Header.Get("Content-Type"))
-		if err != nil {
-			return res, errors.Wrap(err, "parse media type")
-		}
-		switch {
-		case ct == "application/json":
-			buf, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return res, err
-			}
-			d := jx.DecodeBytes(buf)
-
-			var response ForbiddenError
-			if err := func() error {
-				if err := response.Decode(d); err != nil {
-					return err
-				}
-				if err := d.Skip(); err != io.EOF {
-					return errors.New("unexpected trailing data")
-				}
-				return nil
-			}(); err != nil {
-				err = &ogenerrors.DecodeBodyError{
-					ContentType: ct,
-					Body:        buf,
-					Err:         err,
-				}
-				return res, err
-			}
-			// Validate response.
-			if err := func() error {
-				if err := response.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return res, errors.Wrap(err, "validate")
-			}
-			return &response, nil
-		default:
-			return res, validate.InvalidContentType(ct)
-		}
-	case 404:
-		// Code 404.
-		ct, _, err := mime.ParseMediaType(resp.Header.Get("Content-Type"))
-		if err != nil {
-			return res, errors.Wrap(err, "parse media type")
-		}
-		switch {
-		case ct == "application/json":
-			buf, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return res, err
-			}
-			d := jx.DecodeBytes(buf)
-
-			var response NotFoundError
-			if err := func() error {
-				if err := response.Decode(d); err != nil {
-					return err
-				}
-				if err := d.Skip(); err != io.EOF {
-					return errors.New("unexpected trailing data")
-				}
-				return nil
-			}(); err != nil {
-				err = &ogenerrors.DecodeBodyError{
-					ContentType: ct,
-					Body:        buf,
-					Err:         err,
-				}
-				return res, err
-			}
-			// Validate response.
-			if err := func() error {
-				if err := response.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return res, errors.Wrap(err, "validate")
-			}
-			return &response, nil
-		default:
-			return res, validate.InvalidContentType(ct)
-		}
-	case 500:
-		// Code 500.
-		ct, _, err := mime.ParseMediaType(resp.Header.Get("Content-Type"))
-		if err != nil {
-			return res, errors.Wrap(err, "parse media type")
-		}
-		switch {
-		case ct == "application/json":
-			buf, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return res, err
-			}
-			d := jx.DecodeBytes(buf)
-
-			var response InternalServerError
-			if err := func() error {
-				if err := response.Decode(d); err != nil {
-					return err
-				}
-				if err := d.Skip(); err != io.EOF {
-					return errors.New("unexpected trailing data")
-				}
-				return nil
-			}(); err != nil {
-				err = &ogenerrors.DecodeBodyError{
-					ContentType: ct,
-					Body:        buf,
-					Err:         err,
-				}
-				return res, err
-			}
-			// Validate response.
-			if err := func() error {
-				if err := response.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return res, errors.Wrap(err, "validate")
-			}
-			return &response, nil
-		default:
-			return res, validate.InvalidContentType(ct)
-		}
-	}
-	return res, validate.UnexpectedStatusCode(resp.StatusCode)
-}
-
-func decodeGetDocumentByIDResponse(resp *http.Response) (res GetDocumentByIDRes, _ error) {
+func decodeGetDocumentResponse(resp *http.Response) (res GetDocumentRes, _ error) {
 	switch resp.StatusCode {
 	case 200:
 		// Code 200.
@@ -683,15 +375,15 @@ func decodeGetDocumentByIDResponse(resp *http.Response) (res GetDocumentByIDRes,
 				}
 				return res, err
 			}
-			// Validate response.
-			if err := func() error {
-				if err := response.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return res, errors.Wrap(err, "validate")
+			return &response, nil
+		case ct == "application/octet-stream":
+			reader := resp.Body
+			b, err := io.ReadAll(reader)
+			if err != nil {
+				return res, err
 			}
+
+			response := GetDocumentOKApplicationOctetStream{Data: bytes.NewReader(b)}
 			return &response, nil
 		default:
 			return res, validate.InvalidContentType(ct)
@@ -726,15 +418,6 @@ func decodeGetDocumentByIDResponse(resp *http.Response) (res GetDocumentByIDRes,
 					Err:         err,
 				}
 				return res, err
-			}
-			// Validate response.
-			if err := func() error {
-				if err := response.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return res, errors.Wrap(err, "validate")
 			}
 			return &response, nil
 		default:
@@ -771,15 +454,6 @@ func decodeGetDocumentByIDResponse(resp *http.Response) (res GetDocumentByIDRes,
 				}
 				return res, err
 			}
-			// Validate response.
-			if err := func() error {
-				if err := response.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return res, errors.Wrap(err, "validate")
-			}
 			return &response, nil
 		default:
 			return res, validate.InvalidContentType(ct)
@@ -814,15 +488,6 @@ func decodeGetDocumentByIDResponse(resp *http.Response) (res GetDocumentByIDRes,
 					Err:         err,
 				}
 				return res, err
-			}
-			// Validate response.
-			if err := func() error {
-				if err := response.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return res, errors.Wrap(err, "validate")
 			}
 			return &response, nil
 		default:
@@ -859,15 +524,6 @@ func decodeGetDocumentByIDResponse(resp *http.Response) (res GetDocumentByIDRes,
 				}
 				return res, err
 			}
-			// Validate response.
-			if err := func() error {
-				if err := response.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return res, errors.Wrap(err, "validate")
-			}
 			return &response, nil
 		default:
 			return res, validate.InvalidContentType(ct)
@@ -876,284 +532,23 @@ func decodeGetDocumentByIDResponse(resp *http.Response) (res GetDocumentByIDRes,
 	return res, validate.UnexpectedStatusCode(resp.StatusCode)
 }
 
-func decodeGetDocumentByIDHeadResponse(resp *http.Response) (res GetDocumentByIDHeadRes, _ error) {
+func decodeGetDocumentHeadResponse(resp *http.Response) (res GetDocumentHeadRes, _ error) {
 	switch resp.StatusCode {
 	case 200:
 		// Code 200.
-		var wrapper GetDocumentByIDHeadOK
-		h := uri.NewHeaderDecoder(resp.Header)
-		// Parse "X-Document-Checksum" header.
-		{
-			cfg := uri.HeaderParameterDecodingConfig{
-				Name:    "X-Document-Checksum",
-				Explode: false,
-			}
-			if err := func() error {
-				if err := h.HasParam(cfg); err == nil {
-					if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-						var wrapperDotXDocumentChecksumVal string
-						if err := func() error {
-							val, err := d.DecodeValue()
-							if err != nil {
-								return err
-							}
-
-							c, err := conv.ToString(val)
-							if err != nil {
-								return err
-							}
-
-							wrapperDotXDocumentChecksumVal = c
-							return nil
-						}(); err != nil {
-							return err
-						}
-						wrapper.XDocumentChecksum.SetTo(wrapperDotXDocumentChecksumVal)
-						return nil
-					}); err != nil {
-						return err
-					}
-				}
-				return nil
-			}(); err != nil {
-				return res, errors.Wrap(err, "parse X-Document-Checksum header")
-			}
-		}
-		// Parse "X-Document-Created-At" header.
-		{
-			cfg := uri.HeaderParameterDecodingConfig{
-				Name:    "X-Document-Created-At",
-				Explode: false,
-			}
-			if err := func() error {
-				if err := h.HasParam(cfg); err == nil {
-					if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-						var wrapperDotXDocumentCreatedAtVal time.Time
-						if err := func() error {
-							val, err := d.DecodeValue()
-							if err != nil {
-								return err
-							}
-
-							c, err := conv.ToDateTime(val)
-							if err != nil {
-								return err
-							}
-
-							wrapperDotXDocumentCreatedAtVal = c
-							return nil
-						}(); err != nil {
-							return err
-						}
-						wrapper.XDocumentCreatedAt.SetTo(wrapperDotXDocumentCreatedAtVal)
-						return nil
-					}); err != nil {
-						return err
-					}
-				}
-				return nil
-			}(); err != nil {
-				return res, errors.Wrap(err, "parse X-Document-Created-At header")
-			}
-		}
-		// Parse "X-Document-ID" header.
-		{
-			cfg := uri.HeaderParameterDecodingConfig{
-				Name:    "X-Document-ID",
-				Explode: false,
-			}
-			if err := func() error {
-				if err := h.HasParam(cfg); err == nil {
-					if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-						var wrapperDotXDocumentIDVal uuid.UUID
-						if err := func() error {
-							val, err := d.DecodeValue()
-							if err != nil {
-								return err
-							}
-
-							c, err := conv.ToUUID(val)
-							if err != nil {
-								return err
-							}
-
-							wrapperDotXDocumentIDVal = c
-							return nil
-						}(); err != nil {
-							return err
-						}
-						wrapper.XDocumentID.SetTo(wrapperDotXDocumentIDVal)
-						return nil
-					}); err != nil {
-						return err
-					}
-				}
-				return nil
-			}(); err != nil {
-				return res, errors.Wrap(err, "parse X-Document-ID header")
-			}
-		}
-		// Parse "X-Document-MIME-Type" header.
-		{
-			cfg := uri.HeaderParameterDecodingConfig{
-				Name:    "X-Document-MIME-Type",
-				Explode: false,
-			}
-			if err := func() error {
-				if err := h.HasParam(cfg); err == nil {
-					if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-						var wrapperDotXDocumentMIMETypeVal string
-						if err := func() error {
-							val, err := d.DecodeValue()
-							if err != nil {
-								return err
-							}
-
-							c, err := conv.ToString(val)
-							if err != nil {
-								return err
-							}
-
-							wrapperDotXDocumentMIMETypeVal = c
-							return nil
-						}(); err != nil {
-							return err
-						}
-						wrapper.XDocumentMIMEType.SetTo(wrapperDotXDocumentMIMETypeVal)
-						return nil
-					}); err != nil {
-						return err
-					}
-				}
-				return nil
-			}(); err != nil {
-				return res, errors.Wrap(err, "parse X-Document-MIME-Type header")
-			}
-		}
-		// Parse "X-Document-Name" header.
-		{
-			cfg := uri.HeaderParameterDecodingConfig{
-				Name:    "X-Document-Name",
-				Explode: false,
-			}
-			if err := func() error {
-				if err := h.HasParam(cfg); err == nil {
-					if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-						var wrapperDotXDocumentNameVal string
-						if err := func() error {
-							val, err := d.DecodeValue()
-							if err != nil {
-								return err
-							}
-
-							c, err := conv.ToString(val)
-							if err != nil {
-								return err
-							}
-
-							wrapperDotXDocumentNameVal = c
-							return nil
-						}(); err != nil {
-							return err
-						}
-						wrapper.XDocumentName.SetTo(wrapperDotXDocumentNameVal)
-						return nil
-					}); err != nil {
-						return err
-					}
-				}
-				return nil
-			}(); err != nil {
-				return res, errors.Wrap(err, "parse X-Document-Name header")
-			}
-		}
-		// Parse "X-Document-Size" header.
-		{
-			cfg := uri.HeaderParameterDecodingConfig{
-				Name:    "X-Document-Size",
-				Explode: false,
-			}
-			if err := func() error {
-				if err := h.HasParam(cfg); err == nil {
-					if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-						var wrapperDotXDocumentSizeVal int
-						if err := func() error {
-							val, err := d.DecodeValue()
-							if err != nil {
-								return err
-							}
-
-							c, err := conv.ToInt(val)
-							if err != nil {
-								return err
-							}
-
-							wrapperDotXDocumentSizeVal = c
-							return nil
-						}(); err != nil {
-							return err
-						}
-						wrapper.XDocumentSize.SetTo(wrapperDotXDocumentSizeVal)
-						return nil
-					}); err != nil {
-						return err
-					}
-				}
-				return nil
-			}(); err != nil {
-				return res, errors.Wrap(err, "parse X-Document-Size header")
-			}
-		}
-		// Parse "X-Document-Updated-At" header.
-		{
-			cfg := uri.HeaderParameterDecodingConfig{
-				Name:    "X-Document-Updated-At",
-				Explode: false,
-			}
-			if err := func() error {
-				if err := h.HasParam(cfg); err == nil {
-					if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-						var wrapperDotXDocumentUpdatedAtVal time.Time
-						if err := func() error {
-							val, err := d.DecodeValue()
-							if err != nil {
-								return err
-							}
-
-							c, err := conv.ToDateTime(val)
-							if err != nil {
-								return err
-							}
-
-							wrapperDotXDocumentUpdatedAtVal = c
-							return nil
-						}(); err != nil {
-							return err
-						}
-						wrapper.XDocumentUpdatedAt.SetTo(wrapperDotXDocumentUpdatedAtVal)
-						return nil
-					}); err != nil {
-						return err
-					}
-				}
-				return nil
-			}(); err != nil {
-				return res, errors.Wrap(err, "parse X-Document-Updated-At header")
-			}
-		}
-		return &wrapper, nil
+		return &GetDocumentHeadOK{}, nil
 	case 401:
 		// Code 401.
-		return &GetDocumentByIDHeadUnauthorized{}, nil
+		return &GetDocumentHeadUnauthorized{}, nil
 	case 403:
 		// Code 403.
-		return &GetDocumentByIDHeadForbidden{}, nil
+		return &GetDocumentHeadForbidden{}, nil
 	case 404:
 		// Code 404.
-		return &GetDocumentByIDHeadNotFound{}, nil
+		return &GetDocumentHeadNotFound{}, nil
 	case 500:
 		// Code 500.
-		return &GetDocumentByIDHeadInternalServerError{}, nil
+		return &GetDocumentHeadInternalServerError{}, nil
 	}
 	return res, validate.UnexpectedStatusCode(resp.StatusCode)
 }
@@ -1235,15 +630,6 @@ func decodeListDocumentsResponse(resp *http.Response) (res ListDocumentsRes, _ e
 				}
 				return res, err
 			}
-			// Validate response.
-			if err := func() error {
-				if err := response.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return res, errors.Wrap(err, "validate")
-			}
 			return &response, nil
 		default:
 			return res, validate.InvalidContentType(ct)
@@ -1279,15 +665,6 @@ func decodeListDocumentsResponse(resp *http.Response) (res ListDocumentsRes, _ e
 				}
 				return res, err
 			}
-			// Validate response.
-			if err := func() error {
-				if err := response.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return res, errors.Wrap(err, "validate")
-			}
 			return &response, nil
 		default:
 			return res, validate.InvalidContentType(ct)
@@ -1300,120 +677,7 @@ func decodeListDocumentsHeadResponse(resp *http.Response) (res ListDocumentsHead
 	switch resp.StatusCode {
 	case 200:
 		// Code 200.
-		var wrapper ListDocumentsHeadOK
-		h := uri.NewHeaderDecoder(resp.Header)
-		// Parse "X-Page" header.
-		{
-			cfg := uri.HeaderParameterDecodingConfig{
-				Name:    "X-Page",
-				Explode: false,
-			}
-			if err := func() error {
-				if err := h.HasParam(cfg); err == nil {
-					if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-						var wrapperDotXPageVal int
-						if err := func() error {
-							val, err := d.DecodeValue()
-							if err != nil {
-								return err
-							}
-
-							c, err := conv.ToInt(val)
-							if err != nil {
-								return err
-							}
-
-							wrapperDotXPageVal = c
-							return nil
-						}(); err != nil {
-							return err
-						}
-						wrapper.XPage.SetTo(wrapperDotXPageVal)
-						return nil
-					}); err != nil {
-						return err
-					}
-				}
-				return nil
-			}(); err != nil {
-				return res, errors.Wrap(err, "parse X-Page header")
-			}
-		}
-		// Parse "X-Per-Page" header.
-		{
-			cfg := uri.HeaderParameterDecodingConfig{
-				Name:    "X-Per-Page",
-				Explode: false,
-			}
-			if err := func() error {
-				if err := h.HasParam(cfg); err == nil {
-					if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-						var wrapperDotXPerPageVal int
-						if err := func() error {
-							val, err := d.DecodeValue()
-							if err != nil {
-								return err
-							}
-
-							c, err := conv.ToInt(val)
-							if err != nil {
-								return err
-							}
-
-							wrapperDotXPerPageVal = c
-							return nil
-						}(); err != nil {
-							return err
-						}
-						wrapper.XPerPage.SetTo(wrapperDotXPerPageVal)
-						return nil
-					}); err != nil {
-						return err
-					}
-				}
-				return nil
-			}(); err != nil {
-				return res, errors.Wrap(err, "parse X-Per-Page header")
-			}
-		}
-		// Parse "X-Total-Count" header.
-		{
-			cfg := uri.HeaderParameterDecodingConfig{
-				Name:    "X-Total-Count",
-				Explode: false,
-			}
-			if err := func() error {
-				if err := h.HasParam(cfg); err == nil {
-					if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-						var wrapperDotXTotalCountVal int
-						if err := func() error {
-							val, err := d.DecodeValue()
-							if err != nil {
-								return err
-							}
-
-							c, err := conv.ToInt(val)
-							if err != nil {
-								return err
-							}
-
-							wrapperDotXTotalCountVal = c
-							return nil
-						}(); err != nil {
-							return err
-						}
-						wrapper.XTotalCount.SetTo(wrapperDotXTotalCountVal)
-						return nil
-					}); err != nil {
-						return err
-					}
-				}
-				return nil
-			}(); err != nil {
-				return res, errors.Wrap(err, "parse X-Total-Count header")
-			}
-		}
-		return &wrapper, nil
+		return &ListDocumentsHeadOK{}, nil
 	case 401:
 		// Code 401.
 		return &ListDocumentsHeadUnauthorized{}, nil
@@ -1457,15 +721,6 @@ func decodeLoginUserResponse(resp *http.Response) (res LoginUserRes, _ error) {
 				}
 				return res, err
 			}
-			// Validate response.
-			if err := func() error {
-				if err := response.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return res, errors.Wrap(err, "validate")
-			}
 			return &response, nil
 		default:
 			return res, validate.InvalidContentType(ct)
@@ -1501,15 +756,6 @@ func decodeLoginUserResponse(resp *http.Response) (res LoginUserRes, _ error) {
 				}
 				return res, err
 			}
-			// Validate response.
-			if err := func() error {
-				if err := response.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return res, errors.Wrap(err, "validate")
-			}
 			return &response, nil
 		default:
 			return res, validate.InvalidContentType(ct)
@@ -1545,15 +791,6 @@ func decodeLoginUserResponse(resp *http.Response) (res LoginUserRes, _ error) {
 				}
 				return res, err
 			}
-			// Validate response.
-			if err := func() error {
-				if err := response.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return res, errors.Wrap(err, "validate")
-			}
 			return &response, nil
 		default:
 			return res, validate.InvalidContentType(ct)
@@ -1588,15 +825,6 @@ func decodeLoginUserResponse(resp *http.Response) (res LoginUserRes, _ error) {
 					Err:         err,
 				}
 				return res, err
-			}
-			// Validate response.
-			if err := func() error {
-				if err := response.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return res, errors.Wrap(err, "validate")
 			}
 			return &response, nil
 		default:
@@ -1622,7 +850,7 @@ func decodeLogoutUserResponse(resp *http.Response) (res LogoutUserRes, _ error) 
 			}
 			d := jx.DecodeBytes(buf)
 
-			var response LogoutUserOK
+			var response LogoutResponse
 			if err := func() error {
 				if err := response.Decode(d); err != nil {
 					return err
@@ -1674,15 +902,6 @@ func decodeLogoutUserResponse(resp *http.Response) (res LogoutUserRes, _ error) 
 				}
 				return res, err
 			}
-			// Validate response.
-			if err := func() error {
-				if err := response.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return res, errors.Wrap(err, "validate")
-			}
 			return &response, nil
 		default:
 			return res, validate.InvalidContentType(ct)
@@ -1718,15 +937,6 @@ func decodeLogoutUserResponse(resp *http.Response) (res LogoutUserRes, _ error) 
 				}
 				return res, err
 			}
-			// Validate response.
-			if err := func() error {
-				if err := response.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return res, errors.Wrap(err, "validate")
-			}
 			return &response, nil
 		default:
 			return res, validate.InvalidContentType(ct)
@@ -1737,8 +947,8 @@ func decodeLogoutUserResponse(resp *http.Response) (res LogoutUserRes, _ error) 
 
 func decodeRegisterUserResponse(resp *http.Response) (res RegisterUserRes, _ error) {
 	switch resp.StatusCode {
-	case 201:
-		// Code 201.
+	case 200:
+		// Code 200.
 		ct, _, err := mime.ParseMediaType(resp.Header.Get("Content-Type"))
 		if err != nil {
 			return res, errors.Wrap(err, "parse media type")
@@ -1768,15 +978,6 @@ func decodeRegisterUserResponse(resp *http.Response) (res RegisterUserRes, _ err
 				}
 				return res, err
 			}
-			// Validate response.
-			if err := func() error {
-				if err := response.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return res, errors.Wrap(err, "validate")
-			}
 			return &response, nil
 		default:
 			return res, validate.InvalidContentType(ct)
@@ -1812,59 +1013,6 @@ func decodeRegisterUserResponse(resp *http.Response) (res RegisterUserRes, _ err
 				}
 				return res, err
 			}
-			// Validate response.
-			if err := func() error {
-				if err := response.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return res, errors.Wrap(err, "validate")
-			}
-			return &response, nil
-		default:
-			return res, validate.InvalidContentType(ct)
-		}
-	case 409:
-		// Code 409.
-		ct, _, err := mime.ParseMediaType(resp.Header.Get("Content-Type"))
-		if err != nil {
-			return res, errors.Wrap(err, "parse media type")
-		}
-		switch {
-		case ct == "application/json":
-			buf, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return res, err
-			}
-			d := jx.DecodeBytes(buf)
-
-			var response ConflictError
-			if err := func() error {
-				if err := response.Decode(d); err != nil {
-					return err
-				}
-				if err := d.Skip(); err != io.EOF {
-					return errors.New("unexpected trailing data")
-				}
-				return nil
-			}(); err != nil {
-				err = &ogenerrors.DecodeBodyError{
-					ContentType: ct,
-					Body:        buf,
-					Err:         err,
-				}
-				return res, err
-			}
-			// Validate response.
-			if err := func() error {
-				if err := response.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return res, errors.Wrap(err, "validate")
-			}
 			return &response, nil
 		default:
 			return res, validate.InvalidContentType(ct)
@@ -1899,15 +1047,6 @@ func decodeRegisterUserResponse(resp *http.Response) (res RegisterUserRes, _ err
 					Err:         err,
 				}
 				return res, err
-			}
-			// Validate response.
-			if err := func() error {
-				if err := response.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return res, errors.Wrap(err, "validate")
 			}
 			return &response, nil
 		default:

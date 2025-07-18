@@ -1,10 +1,11 @@
 type: object
 properties:
-  message:
-    type: string
-    description: Success message
-    example: "Document deleted successfully"
+  response:
+    type: object
+    description: Результат удаления документа (ID документа -> true)
+    additionalProperties:
+      type: boolean
+    example:
+      "qwdj1q4o34u34ih759ou1": true
 required:
-  - message
-example:
-  message: "Document deleted successfully"
+  - response

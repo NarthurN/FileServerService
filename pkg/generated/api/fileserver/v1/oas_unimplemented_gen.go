@@ -15,52 +15,46 @@ var _ Handler = UnimplementedHandler{}
 
 // CreateDocument implements createDocument operation.
 //
-// Upload a new document file.
+// Загрузка нового документа (файл или JSON данные).
 //
 // POST /api/docs
 func (UnimplementedHandler) CreateDocument(ctx context.Context, req *CreateDocumentRequestMultipart) (r CreateDocumentRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// DeleteDocumentByID implements deleteDocumentByID operation.
+// DeleteDocument implements deleteDocument operation.
 //
-// Delete document by ID.
+// Удаление документа по его идентификатору.
 //
-// DELETE /api/docs/{doc_id}
-func (UnimplementedHandler) DeleteDocumentByID(ctx context.Context, params DeleteDocumentByIDParams) (r DeleteDocumentByIDRes, _ error) {
+// DELETE /api/docs/{id}
+func (UnimplementedHandler) DeleteDocument(ctx context.Context, params DeleteDocumentParams) (r DeleteDocumentRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// DownloadDocumentByID implements downloadDocumentByID operation.
+// GetDocument implements getDocument operation.
 //
-// Download document file by ID.
+// Получение конкретного документа по его
+// идентификатору.
 //
-// GET /api/docs/{doc_id}/download
-func (UnimplementedHandler) DownloadDocumentByID(ctx context.Context, params DownloadDocumentByIDParams) (r DownloadDocumentByIDRes, _ error) {
+// GET /api/docs/{id}
+func (UnimplementedHandler) GetDocument(ctx context.Context, params GetDocumentParams) (r GetDocumentRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// GetDocumentByID implements getDocumentByID operation.
+// GetDocumentHead implements getDocumentHead operation.
 //
-// Get document metadata by ID.
+// HEAD запрос для получения заголовков конкретного
+// документа.
 //
-// GET /api/docs/{doc_id}
-func (UnimplementedHandler) GetDocumentByID(ctx context.Context, params GetDocumentByIDParams) (r GetDocumentByIDRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// GetDocumentByIDHead implements getDocumentByIDHead operation.
-//
-// Get document metadata headers by ID (same as GET but without body).
-//
-// HEAD /api/docs/{doc_id}
-func (UnimplementedHandler) GetDocumentByIDHead(ctx context.Context, params GetDocumentByIDHeadParams) (r GetDocumentByIDHeadRes, _ error) {
+// HEAD /api/docs/{id}
+func (UnimplementedHandler) GetDocumentHead(ctx context.Context, params GetDocumentHeadParams) (r GetDocumentHeadRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // ListDocuments implements listDocuments operation.
 //
-// Get paginated list of user documents.
+// Получение списка документов с возможностью
+// фильтрации.
 //
 // GET /api/docs
 func (UnimplementedHandler) ListDocuments(ctx context.Context, params ListDocumentsParams) (r ListDocumentsRes, _ error) {
@@ -69,7 +63,7 @@ func (UnimplementedHandler) ListDocuments(ctx context.Context, params ListDocume
 
 // ListDocumentsHead implements listDocumentsHead operation.
 //
-// Get headers for paginated list of user documents (same as GET but without body).
+// HEAD запрос для получения заголовков списка документов.
 //
 // HEAD /api/docs
 func (UnimplementedHandler) ListDocumentsHead(ctx context.Context, params ListDocumentsHeadParams) (r ListDocumentsHeadRes, _ error) {
@@ -78,27 +72,27 @@ func (UnimplementedHandler) ListDocumentsHead(ctx context.Context, params ListDo
 
 // LoginUser implements loginUser operation.
 //
-// Authenticate user and get access token.
+// Получение токена авторизации по логину и паролю.
 //
-// POST /api/auth/login
+// POST /api/auth
 func (UnimplementedHandler) LoginUser(ctx context.Context, req *LoginRequest) (r LoginUserRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // LogoutUser implements logoutUser operation.
 //
-// Logout user and invalidate token.
+// Завершение авторизованной сессии работы.
 //
-// POST /api/auth/logout
-func (UnimplementedHandler) LogoutUser(ctx context.Context) (r LogoutUserRes, _ error) {
+// DELETE /api/auth/{token}
+func (UnimplementedHandler) LogoutUser(ctx context.Context, params LogoutUserParams) (r LogoutUserRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // RegisterUser implements registerUser operation.
 //
-// Create a new user account.
+// Создание нового пользователя с логином и паролем.
 //
-// POST /api/auth/register
+// POST /api/register
 func (UnimplementedHandler) RegisterUser(ctx context.Context, req *RegisterRequest) (r RegisterUserRes, _ error) {
 	return r, ht.ErrNotImplemented
 }

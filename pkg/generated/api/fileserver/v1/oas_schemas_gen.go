@@ -4,125 +4,64 @@ package fileserver_v1
 
 import (
 	"io"
-	"time"
 
+	"github.com/go-faster/errors"
 	"github.com/go-faster/jx"
-	"github.com/google/uuid"
 
 	ht "github.com/ogen-go/ogen/http"
 )
 
 // Ref: #/components/schemas/bad_request_error
 type BadRequestError struct {
-	// Код ошибки.
-	Code BadRequestErrorCode `json:"code"`
-	// Сообщение об ошибке.
-	Message string `json:"message"`
+	Error BadRequestErrorError `json:"error"`
 }
 
-// GetCode returns the value of Code.
-func (s *BadRequestError) GetCode() BadRequestErrorCode {
-	return s.Code
+// GetError returns the value of Error.
+func (s *BadRequestError) GetError() BadRequestErrorError {
+	return s.Error
 }
 
-// GetMessage returns the value of Message.
-func (s *BadRequestError) GetMessage() string {
-	return s.Message
-}
-
-// SetCode sets the value of Code.
-func (s *BadRequestError) SetCode(val BadRequestErrorCode) {
-	s.Code = val
-}
-
-// SetMessage sets the value of Message.
-func (s *BadRequestError) SetMessage(val string) {
-	s.Message = val
+// SetError sets the value of Error.
+func (s *BadRequestError) SetError(val BadRequestErrorError) {
+	s.Error = val
 }
 
 func (*BadRequestError) createDocumentRes() {}
 func (*BadRequestError) loginUserRes()      {}
 func (*BadRequestError) registerUserRes()   {}
 
-// Код ошибки.
-type BadRequestErrorCode int
-
-const (
-	BadRequestErrorCode400 BadRequestErrorCode = 400
-)
-
-// AllValues returns all BadRequestErrorCode values.
-func (BadRequestErrorCode) AllValues() []BadRequestErrorCode {
-	return []BadRequestErrorCode{
-		BadRequestErrorCode400,
-	}
-}
-
-type BearerAuth struct {
-	Token string
-}
-
-// GetToken returns the value of Token.
-func (s *BearerAuth) GetToken() string {
-	return s.Token
-}
-
-// SetToken sets the value of Token.
-func (s *BearerAuth) SetToken(val string) {
-	s.Token = val
-}
-
-// Ref: #/components/schemas/conflict_error
-type ConflictError struct {
-	// Код ошибки.
-	Code ConflictErrorCode `json:"code"`
-	// Сообщение об ошибке.
-	Message string `json:"message"`
+type BadRequestErrorError struct {
+	Code int    `json:"code"`
+	Text string `json:"text"`
 }
 
 // GetCode returns the value of Code.
-func (s *ConflictError) GetCode() ConflictErrorCode {
+func (s *BadRequestErrorError) GetCode() int {
 	return s.Code
 }
 
-// GetMessage returns the value of Message.
-func (s *ConflictError) GetMessage() string {
-	return s.Message
+// GetText returns the value of Text.
+func (s *BadRequestErrorError) GetText() string {
+	return s.Text
 }
 
 // SetCode sets the value of Code.
-func (s *ConflictError) SetCode(val ConflictErrorCode) {
+func (s *BadRequestErrorError) SetCode(val int) {
 	s.Code = val
 }
 
-// SetMessage sets the value of Message.
-func (s *ConflictError) SetMessage(val string) {
-	s.Message = val
-}
-
-func (*ConflictError) registerUserRes() {}
-
-// Код ошибки.
-type ConflictErrorCode int
-
-const (
-	ConflictErrorCode409 ConflictErrorCode = 409
-)
-
-// AllValues returns all ConflictErrorCode values.
-func (ConflictErrorCode) AllValues() []ConflictErrorCode {
-	return []ConflictErrorCode{
-		ConflictErrorCode409,
-	}
+// SetText sets the value of Text.
+func (s *BadRequestErrorError) SetText(val string) {
+	s.Text = val
 }
 
 // Ref: #/components/schemas/create_document_request
 type CreateDocumentRequestMultipart struct {
 	Meta Meta `json:"meta"`
-	// Arbitrary document JSON data.
+	// JSON данные документа (опционально).
 	JSON OptCreateDocumentRequestMultipartJSON `json:"json"`
-	// File content.
-	File ht.MultipartFile `json:"file"`
+	// Файл документа (опционально).
+	File OptMultipartFile `json:"file"`
 }
 
 // GetMeta returns the value of Meta.
@@ -136,7 +75,7 @@ func (s *CreateDocumentRequestMultipart) GetJSON() OptCreateDocumentRequestMulti
 }
 
 // GetFile returns the value of File.
-func (s *CreateDocumentRequestMultipart) GetFile() ht.MultipartFile {
+func (s *CreateDocumentRequestMultipart) GetFile() OptMultipartFile {
 	return s.File
 }
 
@@ -151,11 +90,11 @@ func (s *CreateDocumentRequestMultipart) SetJSON(val OptCreateDocumentRequestMul
 }
 
 // SetFile sets the value of File.
-func (s *CreateDocumentRequestMultipart) SetFile(val ht.MultipartFile) {
+func (s *CreateDocumentRequestMultipart) SetFile(val OptMultipartFile) {
 	s.File = val
 }
 
-// Arbitrary document JSON data.
+// JSON данные документа (опционально).
 type CreateDocumentRequestMultipartJSON map[string]jx.Raw
 
 func (s *CreateDocumentRequestMultipartJSON) init() CreateDocumentRequestMultipartJSON {
@@ -185,9 +124,9 @@ func (s *CreateDocumentResponse) SetData(val CreateDocumentResponseData) {
 func (*CreateDocumentResponse) createDocumentRes() {}
 
 type CreateDocumentResponseData struct {
-	// Document JSON data.
+	// JSON данные документа (если были переданы).
 	JSON OptCreateDocumentResponseDataJSON `json:"json"`
-	// Document file name.
+	// Имя загруженного файла.
 	File string `json:"file"`
 }
 
@@ -211,7 +150,7 @@ func (s *CreateDocumentResponseData) SetFile(val string) {
 	s.File = val
 }
 
-// Document JSON data.
+// JSON данные документа (если были переданы).
 type CreateDocumentResponseDataJSON map[string]jx.Raw
 
 func (s *CreateDocumentResponseDataJSON) init() CreateDocumentResponseDataJSON {
@@ -225,44 +164,54 @@ func (s *CreateDocumentResponseDataJSON) init() CreateDocumentResponseDataJSON {
 
 // Ref: #/components/schemas/delete_document_response
 type DeleteDocumentResponse struct {
-	// Success message.
-	Message string `json:"message"`
+	// Результат удаления документа (ID документа -> true).
+	Response DeleteDocumentResponseResponse `json:"response"`
 }
 
-// GetMessage returns the value of Message.
-func (s *DeleteDocumentResponse) GetMessage() string {
-	return s.Message
+// GetResponse returns the value of Response.
+func (s *DeleteDocumentResponse) GetResponse() DeleteDocumentResponseResponse {
+	return s.Response
 }
 
-// SetMessage sets the value of Message.
-func (s *DeleteDocumentResponse) SetMessage(val string) {
-	s.Message = val
+// SetResponse sets the value of Response.
+func (s *DeleteDocumentResponse) SetResponse(val DeleteDocumentResponseResponse) {
+	s.Response = val
 }
 
-func (*DeleteDocumentResponse) deleteDocumentByIDRes() {}
+func (*DeleteDocumentResponse) deleteDocumentRes() {}
+
+// Результат удаления документа (ID документа -> true).
+type DeleteDocumentResponseResponse map[string]bool
+
+func (s *DeleteDocumentResponseResponse) init() DeleteDocumentResponseResponse {
+	m := *s
+	if m == nil {
+		m = map[string]bool{}
+		*s = m
+	}
+	return m
+}
 
 // Ref: #/components/schemas/document_dto
 type DocumentDto struct {
-	// Unique identifier for the document.
-	ID uuid.UUID `json:"id"`
-	// Document name.
+	// Уникальный идентификатор документа.
+	ID string `json:"id"`
+	// Имя документа.
 	Name string `json:"name"`
-	// Document size in bytes.
-	Size int64 `json:"size"`
-	// Document MIME type.
-	MimeType string `json:"mime_type"`
-	// Document checksum (SHA256).
-	Checksum string `json:"checksum"`
-	// ID of the user who owns the document.
-	OwnerID uuid.UUID `json:"owner_id"`
-	// Timestamp when document was uploaded.
-	CreatedAt time.Time `json:"created_at"`
-	// Timestamp when document was last updated.
-	UpdatedAt time.Time `json:"updated_at"`
+	// MIME тип документа.
+	Mime string `json:"mime"`
+	// Является ли документ файлом.
+	File bool `json:"file"`
+	// Является ли документ публичным.
+	Public bool `json:"public"`
+	// Дата и время создания документа.
+	Created string `json:"created"`
+	// Список логинов пользователей с доступом.
+	Grant []string `json:"grant"`
 }
 
 // GetID returns the value of ID.
-func (s *DocumentDto) GetID() uuid.UUID {
+func (s *DocumentDto) GetID() string {
 	return s.ID
 }
 
@@ -271,38 +220,33 @@ func (s *DocumentDto) GetName() string {
 	return s.Name
 }
 
-// GetSize returns the value of Size.
-func (s *DocumentDto) GetSize() int64 {
-	return s.Size
+// GetMime returns the value of Mime.
+func (s *DocumentDto) GetMime() string {
+	return s.Mime
 }
 
-// GetMimeType returns the value of MimeType.
-func (s *DocumentDto) GetMimeType() string {
-	return s.MimeType
+// GetFile returns the value of File.
+func (s *DocumentDto) GetFile() bool {
+	return s.File
 }
 
-// GetChecksum returns the value of Checksum.
-func (s *DocumentDto) GetChecksum() string {
-	return s.Checksum
+// GetPublic returns the value of Public.
+func (s *DocumentDto) GetPublic() bool {
+	return s.Public
 }
 
-// GetOwnerID returns the value of OwnerID.
-func (s *DocumentDto) GetOwnerID() uuid.UUID {
-	return s.OwnerID
+// GetCreated returns the value of Created.
+func (s *DocumentDto) GetCreated() string {
+	return s.Created
 }
 
-// GetCreatedAt returns the value of CreatedAt.
-func (s *DocumentDto) GetCreatedAt() time.Time {
-	return s.CreatedAt
-}
-
-// GetUpdatedAt returns the value of UpdatedAt.
-func (s *DocumentDto) GetUpdatedAt() time.Time {
-	return s.UpdatedAt
+// GetGrant returns the value of Grant.
+func (s *DocumentDto) GetGrant() []string {
+	return s.Grant
 }
 
 // SetID sets the value of ID.
-func (s *DocumentDto) SetID(val uuid.UUID) {
+func (s *DocumentDto) SetID(val string) {
 	s.ID = val
 }
 
@@ -311,292 +255,252 @@ func (s *DocumentDto) SetName(val string) {
 	s.Name = val
 }
 
-// SetSize sets the value of Size.
-func (s *DocumentDto) SetSize(val int64) {
-	s.Size = val
+// SetMime sets the value of Mime.
+func (s *DocumentDto) SetMime(val string) {
+	s.Mime = val
 }
 
-// SetMimeType sets the value of MimeType.
-func (s *DocumentDto) SetMimeType(val string) {
-	s.MimeType = val
+// SetFile sets the value of File.
+func (s *DocumentDto) SetFile(val bool) {
+	s.File = val
 }
 
-// SetChecksum sets the value of Checksum.
-func (s *DocumentDto) SetChecksum(val string) {
-	s.Checksum = val
+// SetPublic sets the value of Public.
+func (s *DocumentDto) SetPublic(val bool) {
+	s.Public = val
 }
 
-// SetOwnerID sets the value of OwnerID.
-func (s *DocumentDto) SetOwnerID(val uuid.UUID) {
-	s.OwnerID = val
+// SetCreated sets the value of Created.
+func (s *DocumentDto) SetCreated(val string) {
+	s.Created = val
 }
 
-// SetCreatedAt sets the value of CreatedAt.
-func (s *DocumentDto) SetCreatedAt(val time.Time) {
-	s.CreatedAt = val
+// SetGrant sets the value of Grant.
+func (s *DocumentDto) SetGrant(val []string) {
+	s.Grant = val
 }
 
-// SetUpdatedAt sets the value of UpdatedAt.
-func (s *DocumentDto) SetUpdatedAt(val time.Time) {
-	s.UpdatedAt = val
+// Ref: #/components/schemas/forbidden_error
+type ForbiddenError struct {
+	Error ForbiddenErrorError `json:"error"`
 }
 
-type DownloadDocumentByIDOK struct {
+// GetError returns the value of Error.
+func (s *ForbiddenError) GetError() ForbiddenErrorError {
+	return s.Error
+}
+
+// SetError sets the value of Error.
+func (s *ForbiddenError) SetError(val ForbiddenErrorError) {
+	s.Error = val
+}
+
+func (*ForbiddenError) deleteDocumentRes() {}
+func (*ForbiddenError) getDocumentRes()    {}
+
+type ForbiddenErrorError struct {
+	Code int    `json:"code"`
+	Text string `json:"text"`
+}
+
+// GetCode returns the value of Code.
+func (s *ForbiddenErrorError) GetCode() int {
+	return s.Code
+}
+
+// GetText returns the value of Text.
+func (s *ForbiddenErrorError) GetText() string {
+	return s.Text
+}
+
+// SetCode sets the value of Code.
+func (s *ForbiddenErrorError) SetCode(val int) {
+	s.Code = val
+}
+
+// SetText sets the value of Text.
+func (s *ForbiddenErrorError) SetText(val string) {
+	s.Text = val
+}
+
+// GetDocumentHeadForbidden is response for GetDocumentHead operation.
+type GetDocumentHeadForbidden struct{}
+
+func (*GetDocumentHeadForbidden) getDocumentHeadRes() {}
+
+// GetDocumentHeadInternalServerError is response for GetDocumentHead operation.
+type GetDocumentHeadInternalServerError struct{}
+
+func (*GetDocumentHeadInternalServerError) getDocumentHeadRes() {}
+
+// GetDocumentHeadNotFound is response for GetDocumentHead operation.
+type GetDocumentHeadNotFound struct{}
+
+func (*GetDocumentHeadNotFound) getDocumentHeadRes() {}
+
+// GetDocumentHeadOK is response for GetDocumentHead operation.
+type GetDocumentHeadOK struct{}
+
+func (*GetDocumentHeadOK) getDocumentHeadRes() {}
+
+// GetDocumentHeadUnauthorized is response for GetDocumentHead operation.
+type GetDocumentHeadUnauthorized struct{}
+
+func (*GetDocumentHeadUnauthorized) getDocumentHeadRes() {}
+
+type GetDocumentOKApplicationOctetStream struct {
 	Data io.Reader
 }
 
 // Read reads data from the Data reader.
 //
 // Kept to satisfy the io.Reader interface.
-func (s DownloadDocumentByIDOK) Read(p []byte) (n int, err error) {
+func (s GetDocumentOKApplicationOctetStream) Read(p []byte) (n int, err error) {
 	if s.Data == nil {
 		return 0, io.EOF
 	}
 	return s.Data.Read(p)
 }
 
-// DownloadDocumentByIDOKHeaders wraps DownloadDocumentByIDOK with response headers.
-type DownloadDocumentByIDOKHeaders struct {
-	ContentDisposition OptString
-	Response           DownloadDocumentByIDOK
-}
-
-// GetContentDisposition returns the value of ContentDisposition.
-func (s *DownloadDocumentByIDOKHeaders) GetContentDisposition() OptString {
-	return s.ContentDisposition
-}
-
-// GetResponse returns the value of Response.
-func (s *DownloadDocumentByIDOKHeaders) GetResponse() DownloadDocumentByIDOK {
-	return s.Response
-}
-
-// SetContentDisposition sets the value of ContentDisposition.
-func (s *DownloadDocumentByIDOKHeaders) SetContentDisposition(val OptString) {
-	s.ContentDisposition = val
-}
-
-// SetResponse sets the value of Response.
-func (s *DownloadDocumentByIDOKHeaders) SetResponse(val DownloadDocumentByIDOK) {
-	s.Response = val
-}
-
-func (*DownloadDocumentByIDOKHeaders) downloadDocumentByIDRes() {}
-
-// Ref: #/components/schemas/forbidden_error
-type ForbiddenError struct {
-	// Код ошибки.
-	Code ForbiddenErrorCode `json:"code"`
-	// Сообщение об ошибке.
-	Message string `json:"message"`
-}
-
-// GetCode returns the value of Code.
-func (s *ForbiddenError) GetCode() ForbiddenErrorCode {
-	return s.Code
-}
-
-// GetMessage returns the value of Message.
-func (s *ForbiddenError) GetMessage() string {
-	return s.Message
-}
-
-// SetCode sets the value of Code.
-func (s *ForbiddenError) SetCode(val ForbiddenErrorCode) {
-	s.Code = val
-}
-
-// SetMessage sets the value of Message.
-func (s *ForbiddenError) SetMessage(val string) {
-	s.Message = val
-}
-
-func (*ForbiddenError) deleteDocumentByIDRes()   {}
-func (*ForbiddenError) downloadDocumentByIDRes() {}
-func (*ForbiddenError) getDocumentByIDRes()      {}
-
-// Код ошибки.
-type ForbiddenErrorCode int
-
-const (
-	ForbiddenErrorCode403 ForbiddenErrorCode = 403
-)
-
-// AllValues returns all ForbiddenErrorCode values.
-func (ForbiddenErrorCode) AllValues() []ForbiddenErrorCode {
-	return []ForbiddenErrorCode{
-		ForbiddenErrorCode403,
-	}
-}
-
-// GetDocumentByIDHeadForbidden is response for GetDocumentByIDHead operation.
-type GetDocumentByIDHeadForbidden struct{}
-
-func (*GetDocumentByIDHeadForbidden) getDocumentByIDHeadRes() {}
-
-// GetDocumentByIDHeadInternalServerError is response for GetDocumentByIDHead operation.
-type GetDocumentByIDHeadInternalServerError struct{}
-
-func (*GetDocumentByIDHeadInternalServerError) getDocumentByIDHeadRes() {}
-
-// GetDocumentByIDHeadNotFound is response for GetDocumentByIDHead operation.
-type GetDocumentByIDHeadNotFound struct{}
-
-func (*GetDocumentByIDHeadNotFound) getDocumentByIDHeadRes() {}
-
-// GetDocumentByIDHeadOK is response for GetDocumentByIDHead operation.
-type GetDocumentByIDHeadOK struct {
-	XDocumentChecksum  OptString
-	XDocumentCreatedAt OptDateTime
-	XDocumentID        OptUUID
-	XDocumentMIMEType  OptString
-	XDocumentName      OptString
-	XDocumentSize      OptInt
-	XDocumentUpdatedAt OptDateTime
-}
-
-// GetXDocumentChecksum returns the value of XDocumentChecksum.
-func (s *GetDocumentByIDHeadOK) GetXDocumentChecksum() OptString {
-	return s.XDocumentChecksum
-}
-
-// GetXDocumentCreatedAt returns the value of XDocumentCreatedAt.
-func (s *GetDocumentByIDHeadOK) GetXDocumentCreatedAt() OptDateTime {
-	return s.XDocumentCreatedAt
-}
-
-// GetXDocumentID returns the value of XDocumentID.
-func (s *GetDocumentByIDHeadOK) GetXDocumentID() OptUUID {
-	return s.XDocumentID
-}
-
-// GetXDocumentMIMEType returns the value of XDocumentMIMEType.
-func (s *GetDocumentByIDHeadOK) GetXDocumentMIMEType() OptString {
-	return s.XDocumentMIMEType
-}
-
-// GetXDocumentName returns the value of XDocumentName.
-func (s *GetDocumentByIDHeadOK) GetXDocumentName() OptString {
-	return s.XDocumentName
-}
-
-// GetXDocumentSize returns the value of XDocumentSize.
-func (s *GetDocumentByIDHeadOK) GetXDocumentSize() OptInt {
-	return s.XDocumentSize
-}
-
-// GetXDocumentUpdatedAt returns the value of XDocumentUpdatedAt.
-func (s *GetDocumentByIDHeadOK) GetXDocumentUpdatedAt() OptDateTime {
-	return s.XDocumentUpdatedAt
-}
-
-// SetXDocumentChecksum sets the value of XDocumentChecksum.
-func (s *GetDocumentByIDHeadOK) SetXDocumentChecksum(val OptString) {
-	s.XDocumentChecksum = val
-}
-
-// SetXDocumentCreatedAt sets the value of XDocumentCreatedAt.
-func (s *GetDocumentByIDHeadOK) SetXDocumentCreatedAt(val OptDateTime) {
-	s.XDocumentCreatedAt = val
-}
-
-// SetXDocumentID sets the value of XDocumentID.
-func (s *GetDocumentByIDHeadOK) SetXDocumentID(val OptUUID) {
-	s.XDocumentID = val
-}
-
-// SetXDocumentMIMEType sets the value of XDocumentMIMEType.
-func (s *GetDocumentByIDHeadOK) SetXDocumentMIMEType(val OptString) {
-	s.XDocumentMIMEType = val
-}
-
-// SetXDocumentName sets the value of XDocumentName.
-func (s *GetDocumentByIDHeadOK) SetXDocumentName(val OptString) {
-	s.XDocumentName = val
-}
-
-// SetXDocumentSize sets the value of XDocumentSize.
-func (s *GetDocumentByIDHeadOK) SetXDocumentSize(val OptInt) {
-	s.XDocumentSize = val
-}
-
-// SetXDocumentUpdatedAt sets the value of XDocumentUpdatedAt.
-func (s *GetDocumentByIDHeadOK) SetXDocumentUpdatedAt(val OptDateTime) {
-	s.XDocumentUpdatedAt = val
-}
-
-func (*GetDocumentByIDHeadOK) getDocumentByIDHeadRes() {}
-
-// GetDocumentByIDHeadUnauthorized is response for GetDocumentByIDHead operation.
-type GetDocumentByIDHeadUnauthorized struct{}
-
-func (*GetDocumentByIDHeadUnauthorized) getDocumentByIDHeadRes() {}
+func (*GetDocumentOKApplicationOctetStream) getDocumentRes() {}
 
 // Ref: #/components/schemas/get_document_response
 type GetDocumentResponse struct {
-	Document DocumentDto `json:"document"`
+	// JSON данные документа.
+	Data GetDocumentResponseData `json:"data"`
 }
 
-// GetDocument returns the value of Document.
-func (s *GetDocumentResponse) GetDocument() DocumentDto {
-	return s.Document
+// GetData returns the value of Data.
+func (s *GetDocumentResponse) GetData() GetDocumentResponseData {
+	return s.Data
 }
 
-// SetDocument sets the value of Document.
-func (s *GetDocumentResponse) SetDocument(val DocumentDto) {
-	s.Document = val
+// SetData sets the value of Data.
+func (s *GetDocumentResponse) SetData(val GetDocumentResponseData) {
+	s.Data = val
 }
 
-func (*GetDocumentResponse) getDocumentByIDRes() {}
+func (*GetDocumentResponse) getDocumentRes() {}
+
+// JSON данные документа.
+type GetDocumentResponseData map[string]jx.Raw
+
+func (s *GetDocumentResponseData) init() GetDocumentResponseData {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
 
 // Ref: #/components/schemas/internal_server_error
 type InternalServerError struct {
-	// Код ошибки.
-	Code InternalServerErrorCode `json:"code"`
-	// Сообщение об ошибке.
-	Message string `json:"message"`
+	Error InternalServerErrorError `json:"error"`
+}
+
+// GetError returns the value of Error.
+func (s *InternalServerError) GetError() InternalServerErrorError {
+	return s.Error
+}
+
+// SetError sets the value of Error.
+func (s *InternalServerError) SetError(val InternalServerErrorError) {
+	s.Error = val
+}
+
+func (*InternalServerError) createDocumentRes() {}
+func (*InternalServerError) deleteDocumentRes() {}
+func (*InternalServerError) getDocumentRes()    {}
+func (*InternalServerError) listDocumentsRes()  {}
+func (*InternalServerError) loginUserRes()      {}
+func (*InternalServerError) logoutUserRes()     {}
+func (*InternalServerError) registerUserRes()   {}
+
+type InternalServerErrorError struct {
+	Code int    `json:"code"`
+	Text string `json:"text"`
 }
 
 // GetCode returns the value of Code.
-func (s *InternalServerError) GetCode() InternalServerErrorCode {
+func (s *InternalServerErrorError) GetCode() int {
 	return s.Code
 }
 
-// GetMessage returns the value of Message.
-func (s *InternalServerError) GetMessage() string {
-	return s.Message
+// GetText returns the value of Text.
+func (s *InternalServerErrorError) GetText() string {
+	return s.Text
 }
 
 // SetCode sets the value of Code.
-func (s *InternalServerError) SetCode(val InternalServerErrorCode) {
+func (s *InternalServerErrorError) SetCode(val int) {
 	s.Code = val
 }
 
-// SetMessage sets the value of Message.
-func (s *InternalServerError) SetMessage(val string) {
-	s.Message = val
+// SetText sets the value of Text.
+func (s *InternalServerErrorError) SetText(val string) {
+	s.Text = val
 }
 
-func (*InternalServerError) createDocumentRes()       {}
-func (*InternalServerError) deleteDocumentByIDRes()   {}
-func (*InternalServerError) downloadDocumentByIDRes() {}
-func (*InternalServerError) getDocumentByIDRes()      {}
-func (*InternalServerError) listDocumentsRes()        {}
-func (*InternalServerError) loginUserRes()            {}
-func (*InternalServerError) logoutUserRes()           {}
-func (*InternalServerError) registerUserRes()         {}
-
-// Код ошибки.
-type InternalServerErrorCode int
+type Key string
 
 const (
-	InternalServerErrorCode500 InternalServerErrorCode = 500
+	KeyName    Key = "name"
+	KeyMime    Key = "mime"
+	KeyPublic  Key = "public"
+	KeyFile    Key = "file"
+	KeyCreated Key = "created"
 )
 
-// AllValues returns all InternalServerErrorCode values.
-func (InternalServerErrorCode) AllValues() []InternalServerErrorCode {
-	return []InternalServerErrorCode{
-		InternalServerErrorCode500,
+// AllValues returns all Key values.
+func (Key) AllValues() []Key {
+	return []Key{
+		KeyName,
+		KeyMime,
+		KeyPublic,
+		KeyFile,
+		KeyCreated,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s Key) MarshalText() ([]byte, error) {
+	switch s {
+	case KeyName:
+		return []byte(s), nil
+	case KeyMime:
+		return []byte(s), nil
+	case KeyPublic:
+		return []byte(s), nil
+	case KeyFile:
+		return []byte(s), nil
+	case KeyCreated:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *Key) UnmarshalText(data []byte) error {
+	switch Key(data) {
+	case KeyName:
+		*s = KeyName
+		return nil
+	case KeyMime:
+		*s = KeyMime
+		return nil
+	case KeyPublic:
+		*s = KeyPublic
+		return nil
+	case KeyFile:
+		*s = KeyFile
+		return nil
+	case KeyCreated:
+		*s = KeyCreated
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
 	}
 }
 
@@ -606,41 +510,7 @@ type ListDocumentsHeadInternalServerError struct{}
 func (*ListDocumentsHeadInternalServerError) listDocumentsHeadRes() {}
 
 // ListDocumentsHeadOK is response for ListDocumentsHead operation.
-type ListDocumentsHeadOK struct {
-	XPage       OptInt
-	XPerPage    OptInt
-	XTotalCount OptInt
-}
-
-// GetXPage returns the value of XPage.
-func (s *ListDocumentsHeadOK) GetXPage() OptInt {
-	return s.XPage
-}
-
-// GetXPerPage returns the value of XPerPage.
-func (s *ListDocumentsHeadOK) GetXPerPage() OptInt {
-	return s.XPerPage
-}
-
-// GetXTotalCount returns the value of XTotalCount.
-func (s *ListDocumentsHeadOK) GetXTotalCount() OptInt {
-	return s.XTotalCount
-}
-
-// SetXPage sets the value of XPage.
-func (s *ListDocumentsHeadOK) SetXPage(val OptInt) {
-	s.XPage = val
-}
-
-// SetXPerPage sets the value of XPerPage.
-func (s *ListDocumentsHeadOK) SetXPerPage(val OptInt) {
-	s.XPerPage = val
-}
-
-// SetXTotalCount sets the value of XTotalCount.
-func (s *ListDocumentsHeadOK) SetXTotalCount(val OptInt) {
-	s.XTotalCount = val
-}
+type ListDocumentsHeadOK struct{}
 
 func (*ListDocumentsHeadOK) listDocumentsHeadRes() {}
 
@@ -651,168 +521,140 @@ func (*ListDocumentsHeadUnauthorized) listDocumentsHeadRes() {}
 
 // Ref: #/components/schemas/list_documents_response
 type ListDocumentsResponse struct {
-	// List of documents.
-	Documents []DocumentDto `json:"documents"`
-	// Total number of documents.
-	Total int `json:"total"`
-	// Current page number.
-	Page int `json:"page"`
-	// Number of documents per page.
-	PerPage int `json:"per_page"`
+	Data ListDocumentsResponseData `json:"data"`
 }
 
-// GetDocuments returns the value of Documents.
-func (s *ListDocumentsResponse) GetDocuments() []DocumentDto {
-	return s.Documents
+// GetData returns the value of Data.
+func (s *ListDocumentsResponse) GetData() ListDocumentsResponseData {
+	return s.Data
 }
 
-// GetTotal returns the value of Total.
-func (s *ListDocumentsResponse) GetTotal() int {
-	return s.Total
-}
-
-// GetPage returns the value of Page.
-func (s *ListDocumentsResponse) GetPage() int {
-	return s.Page
-}
-
-// GetPerPage returns the value of PerPage.
-func (s *ListDocumentsResponse) GetPerPage() int {
-	return s.PerPage
-}
-
-// SetDocuments sets the value of Documents.
-func (s *ListDocumentsResponse) SetDocuments(val []DocumentDto) {
-	s.Documents = val
-}
-
-// SetTotal sets the value of Total.
-func (s *ListDocumentsResponse) SetTotal(val int) {
-	s.Total = val
-}
-
-// SetPage sets the value of Page.
-func (s *ListDocumentsResponse) SetPage(val int) {
-	s.Page = val
-}
-
-// SetPerPage sets the value of PerPage.
-func (s *ListDocumentsResponse) SetPerPage(val int) {
-	s.PerPage = val
+// SetData sets the value of Data.
+func (s *ListDocumentsResponse) SetData(val ListDocumentsResponseData) {
+	s.Data = val
 }
 
 func (*ListDocumentsResponse) listDocumentsRes() {}
 
+type ListDocumentsResponseData struct {
+	// Список документов.
+	Docs []DocumentDto `json:"docs"`
+}
+
+// GetDocs returns the value of Docs.
+func (s *ListDocumentsResponseData) GetDocs() []DocumentDto {
+	return s.Docs
+}
+
+// SetDocs sets the value of Docs.
+func (s *ListDocumentsResponseData) SetDocs(val []DocumentDto) {
+	s.Docs = val
+}
+
 // Ref: #/components/schemas/login_request
 type LoginRequest struct {
-	// Username or email for authentication.
-	Username string `json:"username"`
-	// User password.
-	Password string `json:"password"`
+	// Логин пользователя.
+	Login string `json:"login"`
+	// Пароль пользователя.
+	Pswd string `json:"pswd"`
 }
 
-// GetUsername returns the value of Username.
-func (s *LoginRequest) GetUsername() string {
-	return s.Username
+// GetLogin returns the value of Login.
+func (s *LoginRequest) GetLogin() string {
+	return s.Login
 }
 
-// GetPassword returns the value of Password.
-func (s *LoginRequest) GetPassword() string {
-	return s.Password
+// GetPswd returns the value of Pswd.
+func (s *LoginRequest) GetPswd() string {
+	return s.Pswd
 }
 
-// SetUsername sets the value of Username.
-func (s *LoginRequest) SetUsername(val string) {
-	s.Username = val
+// SetLogin sets the value of Login.
+func (s *LoginRequest) SetLogin(val string) {
+	s.Login = val
 }
 
-// SetPassword sets the value of Password.
-func (s *LoginRequest) SetPassword(val string) {
-	s.Password = val
+// SetPswd sets the value of Pswd.
+func (s *LoginRequest) SetPswd(val string) {
+	s.Pswd = val
 }
 
 // Ref: #/components/schemas/login_response
 type LoginResponse struct {
-	User UserDto `json:"user"`
-	// JWT access token.
-	AccessToken string `json:"access_token"`
-	// JWT refresh token.
-	RefreshToken string `json:"refresh_token"`
-	// Token expiration time in seconds.
-	ExpiresIn int `json:"expires_in"`
+	Response LoginResponseResponse `json:"response"`
 }
 
-// GetUser returns the value of User.
-func (s *LoginResponse) GetUser() UserDto {
-	return s.User
+// GetResponse returns the value of Response.
+func (s *LoginResponse) GetResponse() LoginResponseResponse {
+	return s.Response
 }
 
-// GetAccessToken returns the value of AccessToken.
-func (s *LoginResponse) GetAccessToken() string {
-	return s.AccessToken
-}
-
-// GetRefreshToken returns the value of RefreshToken.
-func (s *LoginResponse) GetRefreshToken() string {
-	return s.RefreshToken
-}
-
-// GetExpiresIn returns the value of ExpiresIn.
-func (s *LoginResponse) GetExpiresIn() int {
-	return s.ExpiresIn
-}
-
-// SetUser sets the value of User.
-func (s *LoginResponse) SetUser(val UserDto) {
-	s.User = val
-}
-
-// SetAccessToken sets the value of AccessToken.
-func (s *LoginResponse) SetAccessToken(val string) {
-	s.AccessToken = val
-}
-
-// SetRefreshToken sets the value of RefreshToken.
-func (s *LoginResponse) SetRefreshToken(val string) {
-	s.RefreshToken = val
-}
-
-// SetExpiresIn sets the value of ExpiresIn.
-func (s *LoginResponse) SetExpiresIn(val int) {
-	s.ExpiresIn = val
+// SetResponse sets the value of Response.
+func (s *LoginResponse) SetResponse(val LoginResponseResponse) {
+	s.Response = val
 }
 
 func (*LoginResponse) loginUserRes() {}
 
-type LogoutUserOK struct {
-	Message OptString `json:"message"`
+type LoginResponseResponse struct {
+	// Токен авторизации.
+	Token string `json:"token"`
 }
 
-// GetMessage returns the value of Message.
-func (s *LogoutUserOK) GetMessage() OptString {
-	return s.Message
+// GetToken returns the value of Token.
+func (s *LoginResponseResponse) GetToken() string {
+	return s.Token
 }
 
-// SetMessage sets the value of Message.
-func (s *LogoutUserOK) SetMessage(val OptString) {
-	s.Message = val
+// SetToken sets the value of Token.
+func (s *LoginResponseResponse) SetToken(val string) {
+	s.Token = val
 }
 
-func (*LogoutUserOK) logoutUserRes() {}
+// Ref: #/components/schemas/logout_response
+type LogoutResponse struct {
+	// Результат завершения сессии (токен -> true).
+	Response LogoutResponseResponse `json:"response"`
+}
+
+// GetResponse returns the value of Response.
+func (s *LogoutResponse) GetResponse() LogoutResponseResponse {
+	return s.Response
+}
+
+// SetResponse sets the value of Response.
+func (s *LogoutResponse) SetResponse(val LogoutResponseResponse) {
+	s.Response = val
+}
+
+func (*LogoutResponse) logoutUserRes() {}
+
+// Результат завершения сессии (токен -> true).
+type LogoutResponseResponse map[string]bool
+
+func (s *LogoutResponseResponse) init() LogoutResponseResponse {
+	m := *s
+	if m == nil {
+		m = map[string]bool{}
+		*s = m
+	}
+	return m
+}
 
 // Ref: #/components/schemas/meta
 type Meta struct {
-	// Document name.
+	// Имя документа.
 	Name string `json:"name"`
-	// Is this part a file (true for binary upload).
+	// Является ли документ файлом.
 	File bool `json:"file"`
-	// Whether document is publicly accessible.
+	// Является ли документ публичным.
 	Public bool `json:"public"`
-	// Security token for the upload request.
+	// Токен авторизации.
 	Token string `json:"token"`
-	// MIME type of the document.
+	// MIME тип документа.
 	Mime string `json:"mime"`
-	// List of user logins that have access.
+	// Список логинов пользователей, которым предоставлен
+	// доступ.
 	Grant []string `json:"grant"`
 }
 
@@ -878,48 +720,45 @@ func (s *Meta) SetGrant(val []string) {
 
 // Ref: #/components/schemas/not_found_error
 type NotFoundError struct {
-	// Код ошибки.
-	Code NotFoundErrorCode `json:"code"`
-	// Сообщение об ошибке.
-	Message string `json:"message"`
+	Error NotFoundErrorError `json:"error"`
+}
+
+// GetError returns the value of Error.
+func (s *NotFoundError) GetError() NotFoundErrorError {
+	return s.Error
+}
+
+// SetError sets the value of Error.
+func (s *NotFoundError) SetError(val NotFoundErrorError) {
+	s.Error = val
+}
+
+func (*NotFoundError) deleteDocumentRes() {}
+func (*NotFoundError) getDocumentRes()    {}
+
+type NotFoundErrorError struct {
+	Code int    `json:"code"`
+	Text string `json:"text"`
 }
 
 // GetCode returns the value of Code.
-func (s *NotFoundError) GetCode() NotFoundErrorCode {
+func (s *NotFoundErrorError) GetCode() int {
 	return s.Code
 }
 
-// GetMessage returns the value of Message.
-func (s *NotFoundError) GetMessage() string {
-	return s.Message
+// GetText returns the value of Text.
+func (s *NotFoundErrorError) GetText() string {
+	return s.Text
 }
 
 // SetCode sets the value of Code.
-func (s *NotFoundError) SetCode(val NotFoundErrorCode) {
+func (s *NotFoundErrorError) SetCode(val int) {
 	s.Code = val
 }
 
-// SetMessage sets the value of Message.
-func (s *NotFoundError) SetMessage(val string) {
-	s.Message = val
-}
-
-func (*NotFoundError) deleteDocumentByIDRes()   {}
-func (*NotFoundError) downloadDocumentByIDRes() {}
-func (*NotFoundError) getDocumentByIDRes()      {}
-
-// Код ошибки.
-type NotFoundErrorCode int
-
-const (
-	NotFoundErrorCode404 NotFoundErrorCode = 404
-)
-
-// AllValues returns all NotFoundErrorCode values.
-func (NotFoundErrorCode) AllValues() []NotFoundErrorCode {
-	return []NotFoundErrorCode{
-		NotFoundErrorCode404,
-	}
+// SetText sets the value of Text.
+func (s *NotFoundErrorError) SetText(val string) {
+	s.Text = val
 }
 
 // NewOptCreateDocumentRequestMultipartJSON returns new OptCreateDocumentRequestMultipartJSON with value set to v.
@@ -1014,52 +853,6 @@ func (o OptCreateDocumentResponseDataJSON) Or(d CreateDocumentResponseDataJSON) 
 	return d
 }
 
-// NewOptDateTime returns new OptDateTime with value set to v.
-func NewOptDateTime(v time.Time) OptDateTime {
-	return OptDateTime{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptDateTime is optional time.Time.
-type OptDateTime struct {
-	Value time.Time
-	Set   bool
-}
-
-// IsSet returns true if OptDateTime was set.
-func (o OptDateTime) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptDateTime) Reset() {
-	var v time.Time
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptDateTime) SetTo(v time.Time) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptDateTime) Get() (v time.Time, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptDateTime) Or(d time.Time) time.Time {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewOptInt returns new OptInt with value set to v.
 func NewOptInt(v int) OptInt {
 	return OptInt{
@@ -1100,6 +893,98 @@ func (o OptInt) Get() (v int, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptInt) Or(d int) int {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptKey returns new OptKey with value set to v.
+func NewOptKey(v Key) OptKey {
+	return OptKey{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptKey is optional Key.
+type OptKey struct {
+	Value Key
+	Set   bool
+}
+
+// IsSet returns true if OptKey was set.
+func (o OptKey) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptKey) Reset() {
+	var v Key
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptKey) SetTo(v Key) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptKey) Get() (v Key, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptKey) Or(d Key) Key {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptMultipartFile returns new OptMultipartFile with value set to v.
+func NewOptMultipartFile(v ht.MultipartFile) OptMultipartFile {
+	return OptMultipartFile{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptMultipartFile is optional ht.MultipartFile.
+type OptMultipartFile struct {
+	Value ht.MultipartFile
+	Set   bool
+}
+
+// IsSet returns true if OptMultipartFile was set.
+func (o OptMultipartFile) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptMultipartFile) Reset() {
+	var v ht.MultipartFile
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptMultipartFile) SetTo(v ht.MultipartFile) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptMultipartFile) Get() (v ht.MultipartFile, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptMultipartFile) Or(d ht.MultipartFile) ht.MultipartFile {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -1152,255 +1037,127 @@ func (o OptString) Or(d string) string {
 	return d
 }
 
-// NewOptUUID returns new OptUUID with value set to v.
-func NewOptUUID(v uuid.UUID) OptUUID {
-	return OptUUID{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptUUID is optional uuid.UUID.
-type OptUUID struct {
-	Value uuid.UUID
-	Set   bool
-}
-
-// IsSet returns true if OptUUID was set.
-func (o OptUUID) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptUUID) Reset() {
-	var v uuid.UUID
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptUUID) SetTo(v uuid.UUID) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptUUID) Get() (v uuid.UUID, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptUUID) Or(d uuid.UUID) uuid.UUID {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // Ref: #/components/schemas/register_request
 type RegisterRequest struct {
-	// Username for the new user.
-	Username string `json:"username"`
-	// Email address for the new user.
-	Email string `json:"email"`
-	// Password for the new user.
-	Password string `json:"password"`
+	// Токен администратора (фиксированный, задается в
+	// конфиге).
+	Token string `json:"token"`
+	// Логин нового пользователя (минимум 8 символов,
+	// латиница и цифры).
+	Login string `json:"login"`
+	// Пароль нового пользователя:
+	// - минимум 8 символов
+	// - минимум 2 буквы в разных регистрах
+	// - минимум 1 цифра
+	// - минимум 1 символ (не буква и не цифра).
+	Pswd string `json:"pswd"`
 }
 
-// GetUsername returns the value of Username.
-func (s *RegisterRequest) GetUsername() string {
-	return s.Username
+// GetToken returns the value of Token.
+func (s *RegisterRequest) GetToken() string {
+	return s.Token
 }
 
-// GetEmail returns the value of Email.
-func (s *RegisterRequest) GetEmail() string {
-	return s.Email
+// GetLogin returns the value of Login.
+func (s *RegisterRequest) GetLogin() string {
+	return s.Login
 }
 
-// GetPassword returns the value of Password.
-func (s *RegisterRequest) GetPassword() string {
-	return s.Password
+// GetPswd returns the value of Pswd.
+func (s *RegisterRequest) GetPswd() string {
+	return s.Pswd
 }
 
-// SetUsername sets the value of Username.
-func (s *RegisterRequest) SetUsername(val string) {
-	s.Username = val
+// SetToken sets the value of Token.
+func (s *RegisterRequest) SetToken(val string) {
+	s.Token = val
 }
 
-// SetEmail sets the value of Email.
-func (s *RegisterRequest) SetEmail(val string) {
-	s.Email = val
+// SetLogin sets the value of Login.
+func (s *RegisterRequest) SetLogin(val string) {
+	s.Login = val
 }
 
-// SetPassword sets the value of Password.
-func (s *RegisterRequest) SetPassword(val string) {
-	s.Password = val
+// SetPswd sets the value of Pswd.
+func (s *RegisterRequest) SetPswd(val string) {
+	s.Pswd = val
 }
 
 // Ref: #/components/schemas/register_response
 type RegisterResponse struct {
-	User UserDto `json:"user"`
-	// JWT access token.
-	AccessToken string `json:"access_token"`
-	// JWT refresh token.
-	RefreshToken string `json:"refresh_token"`
-	// Token expiration time in seconds.
-	ExpiresIn int `json:"expires_in"`
+	Response RegisterResponseResponse `json:"response"`
 }
 
-// GetUser returns the value of User.
-func (s *RegisterResponse) GetUser() UserDto {
-	return s.User
+// GetResponse returns the value of Response.
+func (s *RegisterResponse) GetResponse() RegisterResponseResponse {
+	return s.Response
 }
 
-// GetAccessToken returns the value of AccessToken.
-func (s *RegisterResponse) GetAccessToken() string {
-	return s.AccessToken
-}
-
-// GetRefreshToken returns the value of RefreshToken.
-func (s *RegisterResponse) GetRefreshToken() string {
-	return s.RefreshToken
-}
-
-// GetExpiresIn returns the value of ExpiresIn.
-func (s *RegisterResponse) GetExpiresIn() int {
-	return s.ExpiresIn
-}
-
-// SetUser sets the value of User.
-func (s *RegisterResponse) SetUser(val UserDto) {
-	s.User = val
-}
-
-// SetAccessToken sets the value of AccessToken.
-func (s *RegisterResponse) SetAccessToken(val string) {
-	s.AccessToken = val
-}
-
-// SetRefreshToken sets the value of RefreshToken.
-func (s *RegisterResponse) SetRefreshToken(val string) {
-	s.RefreshToken = val
-}
-
-// SetExpiresIn sets the value of ExpiresIn.
-func (s *RegisterResponse) SetExpiresIn(val int) {
-	s.ExpiresIn = val
+// SetResponse sets the value of Response.
+func (s *RegisterResponse) SetResponse(val RegisterResponseResponse) {
+	s.Response = val
 }
 
 func (*RegisterResponse) registerUserRes() {}
 
+type RegisterResponseResponse struct {
+	// Логин зарегистрированного пользователя.
+	Login string `json:"login"`
+}
+
+// GetLogin returns the value of Login.
+func (s *RegisterResponseResponse) GetLogin() string {
+	return s.Login
+}
+
+// SetLogin sets the value of Login.
+func (s *RegisterResponseResponse) SetLogin(val string) {
+	s.Login = val
+}
+
 // Ref: #/components/schemas/unauthorized_error
 type UnauthorizedError struct {
-	// Код ошибки.
-	Code UnauthorizedErrorCode `json:"code"`
-	// Сообщение об ошибке.
-	Message string `json:"message"`
+	Error UnauthorizedErrorError `json:"error"`
+}
+
+// GetError returns the value of Error.
+func (s *UnauthorizedError) GetError() UnauthorizedErrorError {
+	return s.Error
+}
+
+// SetError sets the value of Error.
+func (s *UnauthorizedError) SetError(val UnauthorizedErrorError) {
+	s.Error = val
+}
+
+func (*UnauthorizedError) createDocumentRes() {}
+func (*UnauthorizedError) deleteDocumentRes() {}
+func (*UnauthorizedError) getDocumentRes()    {}
+func (*UnauthorizedError) listDocumentsRes()  {}
+func (*UnauthorizedError) loginUserRes()      {}
+func (*UnauthorizedError) logoutUserRes()     {}
+
+type UnauthorizedErrorError struct {
+	Code int    `json:"code"`
+	Text string `json:"text"`
 }
 
 // GetCode returns the value of Code.
-func (s *UnauthorizedError) GetCode() UnauthorizedErrorCode {
+func (s *UnauthorizedErrorError) GetCode() int {
 	return s.Code
 }
 
-// GetMessage returns the value of Message.
-func (s *UnauthorizedError) GetMessage() string {
-	return s.Message
+// GetText returns the value of Text.
+func (s *UnauthorizedErrorError) GetText() string {
+	return s.Text
 }
 
 // SetCode sets the value of Code.
-func (s *UnauthorizedError) SetCode(val UnauthorizedErrorCode) {
+func (s *UnauthorizedErrorError) SetCode(val int) {
 	s.Code = val
 }
 
-// SetMessage sets the value of Message.
-func (s *UnauthorizedError) SetMessage(val string) {
-	s.Message = val
-}
-
-func (*UnauthorizedError) createDocumentRes()       {}
-func (*UnauthorizedError) deleteDocumentByIDRes()   {}
-func (*UnauthorizedError) downloadDocumentByIDRes() {}
-func (*UnauthorizedError) getDocumentByIDRes()      {}
-func (*UnauthorizedError) listDocumentsRes()        {}
-func (*UnauthorizedError) loginUserRes()            {}
-func (*UnauthorizedError) logoutUserRes()           {}
-
-// Код ошибки.
-type UnauthorizedErrorCode int
-
-const (
-	UnauthorizedErrorCode401 UnauthorizedErrorCode = 401
-)
-
-// AllValues returns all UnauthorizedErrorCode values.
-func (UnauthorizedErrorCode) AllValues() []UnauthorizedErrorCode {
-	return []UnauthorizedErrorCode{
-		UnauthorizedErrorCode401,
-	}
-}
-
-// Ref: #/components/schemas/user_dto
-type UserDto struct {
-	// Unique identifier for the user.
-	ID uuid.UUID `json:"id"`
-	// Username for authentication.
-	Username string `json:"username"`
-	// User's email address.
-	Email string `json:"email"`
-	// Timestamp when user was created.
-	CreatedAt time.Time `json:"created_at"`
-	// Timestamp when user was last updated.
-	UpdatedAt time.Time `json:"updated_at"`
-}
-
-// GetID returns the value of ID.
-func (s *UserDto) GetID() uuid.UUID {
-	return s.ID
-}
-
-// GetUsername returns the value of Username.
-func (s *UserDto) GetUsername() string {
-	return s.Username
-}
-
-// GetEmail returns the value of Email.
-func (s *UserDto) GetEmail() string {
-	return s.Email
-}
-
-// GetCreatedAt returns the value of CreatedAt.
-func (s *UserDto) GetCreatedAt() time.Time {
-	return s.CreatedAt
-}
-
-// GetUpdatedAt returns the value of UpdatedAt.
-func (s *UserDto) GetUpdatedAt() time.Time {
-	return s.UpdatedAt
-}
-
-// SetID sets the value of ID.
-func (s *UserDto) SetID(val uuid.UUID) {
-	s.ID = val
-}
-
-// SetUsername sets the value of Username.
-func (s *UserDto) SetUsername(val string) {
-	s.Username = val
-}
-
-// SetEmail sets the value of Email.
-func (s *UserDto) SetEmail(val string) {
-	s.Email = val
-}
-
-// SetCreatedAt sets the value of CreatedAt.
-func (s *UserDto) SetCreatedAt(val time.Time) {
-	s.CreatedAt = val
-}
-
-// SetUpdatedAt sets the value of UpdatedAt.
-func (s *UserDto) SetUpdatedAt(val time.Time) {
-	s.UpdatedAt = val
+// SetText sets the value of Text.
+func (s *UnauthorizedErrorError) SetText(val string) {
+	s.Text = val
 }

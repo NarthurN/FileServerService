@@ -5,17 +5,13 @@ properties:
     properties:
       json:
         type: object
+        description: JSON данные документа (если были переданы)
         additionalProperties: true
-        description: Document JSON data
       file:
         type: string
-        description: Document file name
+        description: Имя загруженного файла
+        example: "photo.jpg"
     required:
       - file
 required:
   - data
-example:
-  data:
-    json:
-      key: "value"
-    file: "photo.jpg"

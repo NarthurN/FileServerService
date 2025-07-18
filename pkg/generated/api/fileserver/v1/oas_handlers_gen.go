@@ -32,7 +32,7 @@ func (c *codeRecorder) WriteHeader(status int) {
 
 // handleCreateDocumentRequest handles createDocument operation.
 //
-// Upload a new document file.
+// Загрузка нового документа (файл или JSON данные).
 //
 // POST /api/docs
 func (s *Server) handleCreateDocumentRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -104,50 +104,6 @@ func (s *Server) handleCreateDocumentRequest(args [0]string, argsEscaped bool, w
 			ID:   "createDocument",
 		}
 	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, CreateDocumentOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				defer recordError("Security:BearerAuth", err)
-				s.cfg.ErrorHandler(ctx, w, r, err)
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			defer recordError("Security", err)
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-	}
 	request, close, err := s.decodeCreateDocumentRequest(r)
 	if err != nil {
 		err = &ogenerrors.DecodeRequestError{
@@ -169,7 +125,7 @@ func (s *Server) handleCreateDocumentRequest(args [0]string, argsEscaped bool, w
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    CreateDocumentOperation,
-			OperationSummary: "Upload a new document",
+			OperationSummary: "Загрузка нового документа",
 			OperationID:      "createDocument",
 			Body:             request,
 			Params:           middleware.Parameters{},
@@ -212,22 +168,22 @@ func (s *Server) handleCreateDocumentRequest(args [0]string, argsEscaped bool, w
 	}
 }
 
-// handleDeleteDocumentByIDRequest handles deleteDocumentByID operation.
+// handleDeleteDocumentRequest handles deleteDocument operation.
 //
-// Delete document by ID.
+// Удаление документа по его идентификатору.
 //
-// DELETE /api/docs/{doc_id}
-func (s *Server) handleDeleteDocumentByIDRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// DELETE /api/docs/{id}
+func (s *Server) handleDeleteDocumentRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("deleteDocumentByID"),
+		otelogen.OperationID("deleteDocument"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.HTTPRouteKey.String("/api/docs/{doc_id}"),
+		semconv.HTTPRouteKey.String("/api/docs/{id}"),
 	}
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), DeleteDocumentByIDOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), DeleteDocumentOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -282,55 +238,11 @@ func (s *Server) handleDeleteDocumentByIDRequest(args [1]string, argsEscaped boo
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: DeleteDocumentByIDOperation,
-			ID:   "deleteDocumentByID",
+			Name: DeleteDocumentOperation,
+			ID:   "deleteDocument",
 		}
 	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, DeleteDocumentByIDOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				defer recordError("Security:BearerAuth", err)
-				s.cfg.ErrorHandler(ctx, w, r, err)
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			defer recordError("Security", err)
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-	}
-	params, err := decodeDeleteDocumentByIDParams(args, argsEscaped, r)
+	params, err := decodeDeleteDocumentParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -341,27 +253,31 @@ func (s *Server) handleDeleteDocumentByIDRequest(args [1]string, argsEscaped boo
 		return
 	}
 
-	var response DeleteDocumentByIDRes
+	var response DeleteDocumentRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    DeleteDocumentByIDOperation,
-			OperationSummary: "Delete document by ID",
-			OperationID:      "deleteDocumentByID",
+			OperationName:    DeleteDocumentOperation,
+			OperationSummary: "Удаление документа",
+			OperationID:      "deleteDocument",
 			Body:             nil,
 			Params: middleware.Parameters{
 				{
-					Name: "doc_id",
+					Name: "id",
 					In:   "path",
-				}: params.DocID,
+				}: params.ID,
+				{
+					Name: "token",
+					In:   "query",
+				}: params.Token,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = DeleteDocumentByIDParams
-			Response = DeleteDocumentByIDRes
+			Params   = DeleteDocumentParams
+			Response = DeleteDocumentRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -370,14 +286,14 @@ func (s *Server) handleDeleteDocumentByIDRequest(args [1]string, argsEscaped boo
 		](
 			m,
 			mreq,
-			unpackDeleteDocumentByIDParams,
+			unpackDeleteDocumentParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.DeleteDocumentByID(ctx, params)
+				response, err = s.h.DeleteDocument(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.DeleteDocumentByID(ctx, params)
+		response, err = s.h.DeleteDocument(ctx, params)
 	}
 	if err != nil {
 		defer recordError("Internal", err)
@@ -385,7 +301,7 @@ func (s *Server) handleDeleteDocumentByIDRequest(args [1]string, argsEscaped boo
 		return
 	}
 
-	if err := encodeDeleteDocumentByIDResponse(response, w, span); err != nil {
+	if err := encodeDeleteDocumentResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -394,22 +310,23 @@ func (s *Server) handleDeleteDocumentByIDRequest(args [1]string, argsEscaped boo
 	}
 }
 
-// handleDownloadDocumentByIDRequest handles downloadDocumentByID operation.
+// handleGetDocumentRequest handles getDocument operation.
 //
-// Download document file by ID.
+// Получение конкретного документа по его
+// идентификатору.
 //
-// GET /api/docs/{doc_id}/download
-func (s *Server) handleDownloadDocumentByIDRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/docs/{id}
+func (s *Server) handleGetDocumentRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("downloadDocumentByID"),
+		otelogen.OperationID("getDocument"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/docs/{doc_id}/download"),
+		semconv.HTTPRouteKey.String("/api/docs/{id}"),
 	}
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), DownloadDocumentByIDOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetDocumentOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -464,55 +381,11 @@ func (s *Server) handleDownloadDocumentByIDRequest(args [1]string, argsEscaped b
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: DownloadDocumentByIDOperation,
-			ID:   "downloadDocumentByID",
+			Name: GetDocumentOperation,
+			ID:   "getDocument",
 		}
 	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, DownloadDocumentByIDOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				defer recordError("Security:BearerAuth", err)
-				s.cfg.ErrorHandler(ctx, w, r, err)
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			defer recordError("Security", err)
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-	}
-	params, err := decodeDownloadDocumentByIDParams(args, argsEscaped, r)
+	params, err := decodeGetDocumentParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -523,27 +396,31 @@ func (s *Server) handleDownloadDocumentByIDRequest(args [1]string, argsEscaped b
 		return
 	}
 
-	var response DownloadDocumentByIDRes
+	var response GetDocumentRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    DownloadDocumentByIDOperation,
-			OperationSummary: "Download document by ID",
-			OperationID:      "downloadDocumentByID",
+			OperationName:    GetDocumentOperation,
+			OperationSummary: "Получение документа по ID",
+			OperationID:      "getDocument",
 			Body:             nil,
 			Params: middleware.Parameters{
 				{
-					Name: "doc_id",
+					Name: "id",
 					In:   "path",
-				}: params.DocID,
+				}: params.ID,
+				{
+					Name: "token",
+					In:   "query",
+				}: params.Token,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = DownloadDocumentByIDParams
-			Response = DownloadDocumentByIDRes
+			Params   = GetDocumentParams
+			Response = GetDocumentRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -552,14 +429,14 @@ func (s *Server) handleDownloadDocumentByIDRequest(args [1]string, argsEscaped b
 		](
 			m,
 			mreq,
-			unpackDownloadDocumentByIDParams,
+			unpackGetDocumentParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.DownloadDocumentByID(ctx, params)
+				response, err = s.h.GetDocument(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.DownloadDocumentByID(ctx, params)
+		response, err = s.h.GetDocument(ctx, params)
 	}
 	if err != nil {
 		defer recordError("Internal", err)
@@ -567,7 +444,7 @@ func (s *Server) handleDownloadDocumentByIDRequest(args [1]string, argsEscaped b
 		return
 	}
 
-	if err := encodeDownloadDocumentByIDResponse(response, w, span); err != nil {
+	if err := encodeGetDocumentResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -576,204 +453,23 @@ func (s *Server) handleDownloadDocumentByIDRequest(args [1]string, argsEscaped b
 	}
 }
 
-// handleGetDocumentByIDRequest handles getDocumentByID operation.
+// handleGetDocumentHeadRequest handles getDocumentHead operation.
 //
-// Get document metadata by ID.
+// HEAD запрос для получения заголовков конкретного
+// документа.
 //
-// GET /api/docs/{doc_id}
-func (s *Server) handleGetDocumentByIDRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// HEAD /api/docs/{id}
+func (s *Server) handleGetDocumentHeadRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("getDocumentByID"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/docs/{doc_id}"),
-	}
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), GetDocumentByIDOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(codeAttr)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code >= 100 && code < 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: GetDocumentByIDOperation,
-			ID:   "getDocumentByID",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, GetDocumentByIDOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				defer recordError("Security:BearerAuth", err)
-				s.cfg.ErrorHandler(ctx, w, r, err)
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			defer recordError("Security", err)
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-	}
-	params, err := decodeGetDocumentByIDParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var response GetDocumentByIDRes
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    GetDocumentByIDOperation,
-			OperationSummary: "Get document by ID",
-			OperationID:      "getDocumentByID",
-			Body:             nil,
-			Params: middleware.Parameters{
-				{
-					Name: "doc_id",
-					In:   "path",
-				}: params.DocID,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = GetDocumentByIDParams
-			Response = GetDocumentByIDRes
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackGetDocumentByIDParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.GetDocumentByID(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.GetDocumentByID(ctx, params)
-	}
-	if err != nil {
-		defer recordError("Internal", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	if err := encodeGetDocumentByIDResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleGetDocumentByIDHeadRequest handles getDocumentByIDHead operation.
-//
-// Get document metadata headers by ID (same as GET but without body).
-//
-// HEAD /api/docs/{doc_id}
-func (s *Server) handleGetDocumentByIDHeadRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("getDocumentByIDHead"),
+		otelogen.OperationID("getDocumentHead"),
 		semconv.HTTPRequestMethodKey.String("HEAD"),
-		semconv.HTTPRouteKey.String("/api/docs/{doc_id}"),
+		semconv.HTTPRouteKey.String("/api/docs/{id}"),
 	}
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), GetDocumentByIDHeadOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetDocumentHeadOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -828,55 +524,11 @@ func (s *Server) handleGetDocumentByIDHeadRequest(args [1]string, argsEscaped bo
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: GetDocumentByIDHeadOperation,
-			ID:   "getDocumentByIDHead",
+			Name: GetDocumentHeadOperation,
+			ID:   "getDocumentHead",
 		}
 	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, GetDocumentByIDHeadOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				defer recordError("Security:BearerAuth", err)
-				s.cfg.ErrorHandler(ctx, w, r, err)
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			defer recordError("Security", err)
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-	}
-	params, err := decodeGetDocumentByIDHeadParams(args, argsEscaped, r)
+	params, err := decodeGetDocumentHeadParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -887,27 +539,31 @@ func (s *Server) handleGetDocumentByIDHeadRequest(args [1]string, argsEscaped bo
 		return
 	}
 
-	var response GetDocumentByIDHeadRes
+	var response GetDocumentHeadRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    GetDocumentByIDHeadOperation,
-			OperationSummary: "Get document metadata headers",
-			OperationID:      "getDocumentByIDHead",
+			OperationName:    GetDocumentHeadOperation,
+			OperationSummary: "Получение заголовков документа по ID",
+			OperationID:      "getDocumentHead",
 			Body:             nil,
 			Params: middleware.Parameters{
 				{
-					Name: "doc_id",
+					Name: "id",
 					In:   "path",
-				}: params.DocID,
+				}: params.ID,
+				{
+					Name: "token",
+					In:   "query",
+				}: params.Token,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = GetDocumentByIDHeadParams
-			Response = GetDocumentByIDHeadRes
+			Params   = GetDocumentHeadParams
+			Response = GetDocumentHeadRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -916,14 +572,14 @@ func (s *Server) handleGetDocumentByIDHeadRequest(args [1]string, argsEscaped bo
 		](
 			m,
 			mreq,
-			unpackGetDocumentByIDHeadParams,
+			unpackGetDocumentHeadParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.GetDocumentByIDHead(ctx, params)
+				response, err = s.h.GetDocumentHead(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.GetDocumentByIDHead(ctx, params)
+		response, err = s.h.GetDocumentHead(ctx, params)
 	}
 	if err != nil {
 		defer recordError("Internal", err)
@@ -931,7 +587,7 @@ func (s *Server) handleGetDocumentByIDHeadRequest(args [1]string, argsEscaped bo
 		return
 	}
 
-	if err := encodeGetDocumentByIDHeadResponse(response, w, span); err != nil {
+	if err := encodeGetDocumentHeadResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -942,7 +598,8 @@ func (s *Server) handleGetDocumentByIDHeadRequest(args [1]string, argsEscaped bo
 
 // handleListDocumentsRequest handles listDocuments operation.
 //
-// Get paginated list of user documents.
+// Получение списка документов с возможностью
+// фильтрации.
 //
 // GET /api/docs
 func (s *Server) handleListDocumentsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1014,50 +671,6 @@ func (s *Server) handleListDocumentsRequest(args [0]string, argsEscaped bool, w 
 			ID:   "listDocuments",
 		}
 	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListDocumentsOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				defer recordError("Security:BearerAuth", err)
-				s.cfg.ErrorHandler(ctx, w, r, err)
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			defer recordError("Security", err)
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-	}
 	params, err := decodeListDocumentsParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
@@ -1074,18 +687,30 @@ func (s *Server) handleListDocumentsRequest(args [0]string, argsEscaped bool, w 
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListDocumentsOperation,
-			OperationSummary: "Get list of documents",
+			OperationSummary: "Получение списка документов",
 			OperationID:      "listDocuments",
 			Body:             nil,
 			Params: middleware.Parameters{
 				{
-					Name: "page",
+					Name: "token",
 					In:   "query",
-				}: params.Page,
+				}: params.Token,
 				{
-					Name: "per_page",
+					Name: "login",
 					In:   "query",
-				}: params.PerPage,
+				}: params.Login,
+				{
+					Name: "key",
+					In:   "query",
+				}: params.Key,
+				{
+					Name: "value",
+					In:   "query",
+				}: params.Value,
+				{
+					Name: "limit",
+					In:   "query",
+				}: params.Limit,
 			},
 			Raw: r,
 		}
@@ -1128,7 +753,7 @@ func (s *Server) handleListDocumentsRequest(args [0]string, argsEscaped bool, w 
 
 // handleListDocumentsHeadRequest handles listDocumentsHead operation.
 //
-// Get headers for paginated list of user documents (same as GET but without body).
+// HEAD запрос для получения заголовков списка документов.
 //
 // HEAD /api/docs
 func (s *Server) handleListDocumentsHeadRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1200,50 +825,6 @@ func (s *Server) handleListDocumentsHeadRequest(args [0]string, argsEscaped bool
 			ID:   "listDocumentsHead",
 		}
 	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListDocumentsHeadOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				defer recordError("Security:BearerAuth", err)
-				s.cfg.ErrorHandler(ctx, w, r, err)
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			defer recordError("Security", err)
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-	}
 	params, err := decodeListDocumentsHeadParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
@@ -1260,18 +841,30 @@ func (s *Server) handleListDocumentsHeadRequest(args [0]string, argsEscaped bool
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListDocumentsHeadOperation,
-			OperationSummary: "Get list of documents headers",
+			OperationSummary: "Получение заголовков списка документов",
 			OperationID:      "listDocumentsHead",
 			Body:             nil,
 			Params: middleware.Parameters{
 				{
-					Name: "page",
+					Name: "token",
 					In:   "query",
-				}: params.Page,
+				}: params.Token,
 				{
-					Name: "per_page",
+					Name: "login",
 					In:   "query",
-				}: params.PerPage,
+				}: params.Login,
+				{
+					Name: "key",
+					In:   "query",
+				}: params.Key,
+				{
+					Name: "value",
+					In:   "query",
+				}: params.Value,
+				{
+					Name: "limit",
+					In:   "query",
+				}: params.Limit,
 			},
 			Raw: r,
 		}
@@ -1314,16 +907,16 @@ func (s *Server) handleListDocumentsHeadRequest(args [0]string, argsEscaped bool
 
 // handleLoginUserRequest handles loginUser operation.
 //
-// Authenticate user and get access token.
+// Получение токена авторизации по логину и паролю.
 //
-// POST /api/auth/login
+// POST /api/auth
 func (s *Server) handleLoginUserRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("loginUser"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/auth/login"),
+		semconv.HTTPRouteKey.String("/api/auth"),
 	}
 
 	// Start a span for this request.
@@ -1407,7 +1000,7 @@ func (s *Server) handleLoginUserRequest(args [0]string, argsEscaped bool, w http
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    LoginUserOperation,
-			OperationSummary: "Login user",
+			OperationSummary: "Аутентификация пользователя",
 			OperationID:      "loginUser",
 			Body:             request,
 			Params:           middleware.Parameters{},
@@ -1452,16 +1045,16 @@ func (s *Server) handleLoginUserRequest(args [0]string, argsEscaped bool, w http
 
 // handleLogoutUserRequest handles logoutUser operation.
 //
-// Logout user and invalidate token.
+// Завершение авторизованной сессии работы.
 //
-// POST /api/auth/logout
-func (s *Server) handleLogoutUserRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// DELETE /api/auth/{token}
+func (s *Server) handleLogoutUserRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("logoutUser"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/auth/logout"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.HTTPRouteKey.String("/api/auth/{token}"),
 	}
 
 	// Start a span for this request.
@@ -1524,49 +1117,15 @@ func (s *Server) handleLogoutUserRequest(args [0]string, argsEscaped bool, w htt
 			ID:   "logoutUser",
 		}
 	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, LogoutUserOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				defer recordError("Security:BearerAuth", err)
-				s.cfg.ErrorHandler(ctx, w, r, err)
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
+	params, err := decodeLogoutUserParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
 		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			defer recordError("Security", err)
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
 	}
 
 	var response LogoutUserRes
@@ -1574,16 +1133,21 @@ func (s *Server) handleLogoutUserRequest(args [0]string, argsEscaped bool, w htt
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    LogoutUserOperation,
-			OperationSummary: "Logout user",
+			OperationSummary: "Завершение авторизованной сессии",
 			OperationID:      "logoutUser",
 			Body:             nil,
-			Params:           middleware.Parameters{},
-			Raw:              r,
+			Params: middleware.Parameters{
+				{
+					Name: "token",
+					In:   "path",
+				}: params.Token,
+			},
+			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = struct{}
+			Params   = LogoutUserParams
 			Response = LogoutUserRes
 		)
 		response, err = middleware.HookMiddleware[
@@ -1593,14 +1157,14 @@ func (s *Server) handleLogoutUserRequest(args [0]string, argsEscaped bool, w htt
 		](
 			m,
 			mreq,
-			nil,
+			unpackLogoutUserParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.LogoutUser(ctx)
+				response, err = s.h.LogoutUser(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.LogoutUser(ctx)
+		response, err = s.h.LogoutUser(ctx, params)
 	}
 	if err != nil {
 		defer recordError("Internal", err)
@@ -1619,16 +1183,16 @@ func (s *Server) handleLogoutUserRequest(args [0]string, argsEscaped bool, w htt
 
 // handleRegisterUserRequest handles registerUser operation.
 //
-// Create a new user account.
+// Создание нового пользователя с логином и паролем.
 //
-// POST /api/auth/register
+// POST /api/register
 func (s *Server) handleRegisterUserRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("registerUser"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/auth/register"),
+		semconv.HTTPRouteKey.String("/api/register"),
 	}
 
 	// Start a span for this request.
@@ -1712,7 +1276,7 @@ func (s *Server) handleRegisterUserRequest(args [0]string, argsEscaped bool, w h
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    RegisterUserOperation,
-			OperationSummary: "Register a new user",
+			OperationSummary: "Регистрация нового пользователя",
 			OperationID:      "registerUser",
 			Body:             request,
 			Params:           middleware.Parameters{},

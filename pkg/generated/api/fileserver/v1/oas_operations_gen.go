@@ -6,14 +6,13 @@ package fileserver_v1
 type OperationName = string
 
 const (
-	CreateDocumentOperation       OperationName = "CreateDocument"
-	DeleteDocumentByIDOperation   OperationName = "DeleteDocumentByID"
-	DownloadDocumentByIDOperation OperationName = "DownloadDocumentByID"
-	GetDocumentByIDOperation      OperationName = "GetDocumentByID"
-	GetDocumentByIDHeadOperation  OperationName = "GetDocumentByIDHead"
-	ListDocumentsOperation        OperationName = "ListDocuments"
-	ListDocumentsHeadOperation    OperationName = "ListDocumentsHead"
-	LoginUserOperation            OperationName = "LoginUser"
-	LogoutUserOperation           OperationName = "LogoutUser"
-	RegisterUserOperation         OperationName = "RegisterUser"
+	CreateDocumentOperation    OperationName = "CreateDocument"
+	DeleteDocumentOperation    OperationName = "DeleteDocument"
+	GetDocumentOperation       OperationName = "GetDocument"
+	GetDocumentHeadOperation   OperationName = "GetDocumentHead"
+	ListDocumentsOperation     OperationName = "ListDocuments"
+	ListDocumentsHeadOperation OperationName = "ListDocumentsHead"
+	LoginUserOperation         OperationName = "LoginUser"
+	LogoutUserOperation        OperationName = "LogoutUser"
+	RegisterUserOperation      OperationName = "RegisterUser"
 )

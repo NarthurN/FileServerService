@@ -2,26 +2,30 @@ type: object
 properties:
   name:
     type: string
-    description: Document name
-    minLength: 1
-    maxLength: 255
+    description: Имя документа
+    example: "photo.jpg"
   file:
     type: boolean
-    description: Is this part a file (true for binary upload)
+    description: Является ли документ файлом
+    example: true
   public:
     type: boolean
-    description: Whether document is publicly accessible
+    description: Является ли документ публичным
+    example: false
   token:
     type: string
-    description: Security token for the upload request
+    description: Токен авторизации
+    example: "sfuqwejqjoiu93e29"
   mime:
     type: string
-    description: MIME type of the document
+    description: MIME тип документа
+    example: "image/jpg"
   grant:
     type: array
-    description: List of user logins that have access
     items:
       type: string
+    description: Список логинов пользователей, которым предоставлен доступ
+    example: ["login1", "login2"]
 required:
   - name
   - file

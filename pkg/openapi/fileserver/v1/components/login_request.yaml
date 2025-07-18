@@ -1,19 +1,13 @@
 type: object
 properties:
-  username:
+  login:
     type: string
-    description: Username or email for authentication
-    minLength: 3
-    maxLength: 100
-  password:
+    description: Логин пользователя
+    example: "testuser123"
+  pswd:
     type: string
-    description: User password
-    minLength: 8
-    maxLength: 128
-    format: password
+    description: Пароль пользователя
+    example: "TestPass123!"
 required:
-  - username
-  - password
-example:
-  username: "john_doe"
-  password: "SecurePassword123!"
+  - login
+  - pswd

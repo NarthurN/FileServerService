@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: File Server Service API
   version: 1.0.0
-  description: API для сервиса файлового хранилища с аутентификацией
+  description: API для сохранения и раздачи электронных документов
 x-ogen:
   target: ./pkg/generated/api/fileserver/v1
   package: fileserver_v1
@@ -11,36 +11,83 @@ x-ogen:
 servers:
   - url: http://localhost:8080
     description: Development server
-tags:
-  - name: auth
-    description: Authentication operations
-  - name: docs
-    description: Document management operations
+
 paths:
-  /api/auth/register:
+  /api/register:
     $ref: "./paths/auth_register.yaml"
-  /api/auth/login:
+
+  /api/auth:
     $ref: "./paths/auth_login.yaml"
-  /api/auth/logout:
+
+  /api/auth/{token}:
     $ref: "./paths/auth_logout.yaml"
+
   /api/docs:
     $ref: "./paths/docs.yaml"
-  /api/docs/{doc_id}:
+
+  /api/docs/{id}:
     $ref: "./paths/docs_by_id.yaml"
-  /api/docs/{doc_id}/download:
-    $ref: "./paths/docs_download.yaml"
+
 components:
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
   schemas:
-    User:
-      $ref: "./components/user_dto.yaml"
-    Document:
+    # Requests
+    RegisterRequest:
+      $ref: "./components/register_request.yaml"
+    LoginRequest:
+      $ref: "./components/login_request.yaml"
+    CreateDocumentRequest:
+      $ref: "./components/create_document_request.yaml"
+    Meta:
+      $ref: "./components/meta.yaml"
+
+    # Responses
+    RegisterResponse:
+      $ref: "./components/register_response.yaml"
+    LoginResponse:
+      $ref: "./components/login_response.yaml"
+    CreateDocumentResponse:
+      $ref: "./components/create_document_response.yaml"
+    ListDocumentsResponse:
+      $ref: "./components/list_documents_response.yaml"
+    GetDocumentResponse:
+      $ref: "./components/get_document_response.yaml"
+    DeleteDocumentResponse:
+      $ref: "./components/delete_document_response.yaml"
+    LogoutResponse:
+      $ref: "./components/logout_response.yaml"
+
+    # DTOs
+    DocumentDTO:
       $ref: "./components/document_dto.yaml"
-    Error:
-      $ref: "./components/errors/generic_error.yaml"
-security:
-  - bearerAuth: []
+    UserDTO:
+      $ref: "./components/user_dto.yaml"
+
+    # Errors
+    BadRequestError:
+      $ref: "./components/errors/bad_request_error.yaml"
+    UnauthorizedError:
+      $ref: "./components/errors/unauthorized_error.yaml"
+    ForbiddenError:
+      $ref: "./components/errors/forbidden_error.yaml"
+    NotFoundError:
+      $ref: "./components/errors/not_found_error.yaml"
+    MethodNotAllowedError:
+      $ref: "./components/errors/method_not_allowed_error.yaml"
+    InternalServerError:
+      $ref: "./components/errors/internal_server_error.yaml"
+    NotImplementedError:
+      $ref: "./components/errors/not_implemented_error.yaml"
+
+  parameters:
+    DocId:
+      $ref: "./params/doc_id.yaml"
+    Token:
+      $ref: "./params/token.yaml"
+    Login:
+      $ref: "./params/login.yaml"
+    Key:
+      $ref: "./params/key.yaml"
+    Value:
+      $ref: "./params/value.yaml"
+    Limit:
+      $ref: "./params/limit.yaml"

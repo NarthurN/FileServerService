@@ -1,0 +1,16 @@
+type: object
+properties:
+  error:
+    type: object
+    properties:
+      code:
+        type: integer
+        example: 405
+      text:
+        type: string
+        example: "Неверный метод запроса"
+    required:
+      - code
+      - text
+required:
+  - error

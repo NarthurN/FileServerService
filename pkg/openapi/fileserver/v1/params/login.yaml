@@ -1,0 +1,7 @@
+name: login
+in: query
+required: false
+schema:
+  type: string
+description: Логин пользователя для фильтрации (опционально, если не указан - возвращаются собственные документы)
+example: "testuser123"

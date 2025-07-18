@@ -7,10 +7,12 @@ import (
 	"mime"
 	"mime/multipart"
 	"net/http"
+	"strings"
 
 	"github.com/go-faster/errors"
 	"github.com/go-faster/jx"
 
+	"github.com/ogen-go/ogen/conv"
 	ht "github.com/ogen-go/ogen/http"
 	"github.com/ogen-go/ogen/uri"
 )
@@ -63,8 +65,10 @@ func encodeCreateDocumentRequest(
 		}
 	}
 	body, boundary := ht.CreateMultipartBody(func(w *multipart.Writer) error {
-		if err := request.File.WriteMultipart("file", w); err != nil {
-			return errors.Wrap(err, "write \"file\"")
+		if val, ok := request.File.Get(); ok {
+			if err := val.WriteMultipart("file", w); err != nil {
+				return errors.Wrap(err, "write \"file\"")
+			}
 		}
 		if err := q.WriteMultipart(w); err != nil {
 			return errors.Wrap(err, "write multipart")
@@ -79,13 +83,38 @@ func encodeLoginUserRequest(
 	req *LoginRequest,
 	r *http.Request,
 ) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
+	const contentType = "application/x-www-form-urlencoded"
+	request := req
+
+	q := uri.NewFormEncoder(map[string]string{})
 	{
-		req.Encode(e)
+		// Encode "login" form field.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "login",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			return e.EncodeValue(conv.StringToString(request.Login))
+		}); err != nil {
+			return errors.Wrap(err, "encode query")
+		}
 	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	{
+		// Encode "pswd" form field.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "pswd",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			return e.EncodeValue(conv.StringToString(request.Pswd))
+		}); err != nil {
+			return errors.Wrap(err, "encode query")
+		}
+	}
+	encoded := q.Values().Encode()
+	ht.SetBody(r, strings.NewReader(encoded), contentType)
 	return nil
 }
 

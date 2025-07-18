@@ -3,12 +3,7 @@ package doc
 import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/Masterminds/squirrel"
-
-	def "github.com/NarthurN/FileServerService/internal/repository"
 )
-
-// Проверка на реализацию интерфейса
-var _ def.FileServerRepository = (*Repository)(nil)
 
 // Repository - репозиторий для работы с документами
 type Repository struct {

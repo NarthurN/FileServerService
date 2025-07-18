@@ -1,0 +1,16 @@
+type: object
+properties:
+  error:
+    type: object
+    properties:
+      code:
+        type: integer
+        example: 501
+      text:
+        type: string
+        example: "Метод не реализован"
+    required:
+      - code
+      - text
+required:
+  - error

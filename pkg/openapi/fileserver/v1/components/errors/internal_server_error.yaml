@@ -1,17 +1,16 @@
 type: object
 properties:
-  code:
-    type: integer
-    enum: [500]
-    description: Код ошибки
-    example: 500
-  message:
-    type: string
-    description: Сообщение об ошибке
-    example: "Internal server error"
+  error:
+    type: object
+    properties:
+      code:
+        type: integer
+        example: 500
+      text:
+        type: string
+        example: "Внутренняя ошибка сервера"
+    required:
+      - code
+      - text
 required:
-  - code
-  - message
-example:
-  code: 500
-  message: "Internal server error"
+  - error

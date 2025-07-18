@@ -17,7 +17,6 @@ import (
 
 	"github.com/ogen-go/ogen/conv"
 	ht "github.com/ogen-go/ogen/http"
-	"github.com/ogen-go/ogen/ogenerrors"
 	"github.com/ogen-go/ogen/otelogen"
 	"github.com/ogen-go/ogen/uri"
 )
@@ -31,70 +30,66 @@ func trimTrailingSlashes(u *url.URL) {
 type Invoker interface {
 	// CreateDocument invokes createDocument operation.
 	//
-	// Upload a new document file.
+	// Загрузка нового документа (файл или JSON данные).
 	//
 	// POST /api/docs
 	CreateDocument(ctx context.Context, request *CreateDocumentRequestMultipart) (CreateDocumentRes, error)
-	// DeleteDocumentByID invokes deleteDocumentByID operation.
+	// DeleteDocument invokes deleteDocument operation.
 	//
-	// Delete document by ID.
+	// Удаление документа по его идентификатору.
 	//
-	// DELETE /api/docs/{doc_id}
-	DeleteDocumentByID(ctx context.Context, params DeleteDocumentByIDParams) (DeleteDocumentByIDRes, error)
-	// DownloadDocumentByID invokes downloadDocumentByID operation.
+	// DELETE /api/docs/{id}
+	DeleteDocument(ctx context.Context, params DeleteDocumentParams) (DeleteDocumentRes, error)
+	// GetDocument invokes getDocument operation.
 	//
-	// Download document file by ID.
+	// Получение конкретного документа по его
+	// идентификатору.
 	//
-	// GET /api/docs/{doc_id}/download
-	DownloadDocumentByID(ctx context.Context, params DownloadDocumentByIDParams) (DownloadDocumentByIDRes, error)
-	// GetDocumentByID invokes getDocumentByID operation.
+	// GET /api/docs/{id}
+	GetDocument(ctx context.Context, params GetDocumentParams) (GetDocumentRes, error)
+	// GetDocumentHead invokes getDocumentHead operation.
 	//
-	// Get document metadata by ID.
+	// HEAD запрос для получения заголовков конкретного
+	// документа.
 	//
-	// GET /api/docs/{doc_id}
-	GetDocumentByID(ctx context.Context, params GetDocumentByIDParams) (GetDocumentByIDRes, error)
-	// GetDocumentByIDHead invokes getDocumentByIDHead operation.
-	//
-	// Get document metadata headers by ID (same as GET but without body).
-	//
-	// HEAD /api/docs/{doc_id}
-	GetDocumentByIDHead(ctx context.Context, params GetDocumentByIDHeadParams) (GetDocumentByIDHeadRes, error)
+	// HEAD /api/docs/{id}
+	GetDocumentHead(ctx context.Context, params GetDocumentHeadParams) (GetDocumentHeadRes, error)
 	// ListDocuments invokes listDocuments operation.
 	//
-	// Get paginated list of user documents.
+	// Получение списка документов с возможностью
+	// фильтрации.
 	//
 	// GET /api/docs
 	ListDocuments(ctx context.Context, params ListDocumentsParams) (ListDocumentsRes, error)
 	// ListDocumentsHead invokes listDocumentsHead operation.
 	//
-	// Get headers for paginated list of user documents (same as GET but without body).
+	// HEAD запрос для получения заголовков списка документов.
 	//
 	// HEAD /api/docs
 	ListDocumentsHead(ctx context.Context, params ListDocumentsHeadParams) (ListDocumentsHeadRes, error)
 	// LoginUser invokes loginUser operation.
 	//
-	// Authenticate user and get access token.
+	// Получение токена авторизации по логину и паролю.
 	//
-	// POST /api/auth/login
+	// POST /api/auth
 	LoginUser(ctx context.Context, request *LoginRequest) (LoginUserRes, error)
 	// LogoutUser invokes logoutUser operation.
 	//
-	// Logout user and invalidate token.
+	// Завершение авторизованной сессии работы.
 	//
-	// POST /api/auth/logout
-	LogoutUser(ctx context.Context) (LogoutUserRes, error)
+	// DELETE /api/auth/{token}
+	LogoutUser(ctx context.Context, params LogoutUserParams) (LogoutUserRes, error)
 	// RegisterUser invokes registerUser operation.
 	//
-	// Create a new user account.
+	// Создание нового пользователя с логином и паролем.
 	//
-	// POST /api/auth/register
+	// POST /api/register
 	RegisterUser(ctx context.Context, request *RegisterRequest) (RegisterUserRes, error)
 }
 
 // Client implements OAS client.
 type Client struct {
 	serverURL *url.URL
-	sec       SecuritySource
 	baseClient
 }
 
@@ -103,7 +98,7 @@ var _ Handler = struct {
 }{}
 
 // NewClient initializes new Client defined by OAS.
-func NewClient(serverURL string, sec SecuritySource, opts ...ClientOption) (*Client, error) {
+func NewClient(serverURL string, opts ...ClientOption) (*Client, error) {
 	u, err := url.Parse(serverURL)
 	if err != nil {
 		return nil, err
@@ -116,7 +111,6 @@ func NewClient(serverURL string, sec SecuritySource, opts ...ClientOption) (*Cli
 	}
 	return &Client{
 		serverURL:  u,
-		sec:        sec,
 		baseClient: c,
 	}, nil
 }
@@ -138,7 +132,7 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 
 // CreateDocument invokes createDocument operation.
 //
-// Upload a new document file.
+// Загрузка нового документа (файл или JSON данные).
 //
 // POST /api/docs
 func (c *Client) CreateDocument(ctx context.Context, request *CreateDocumentRequestMultipart) (CreateDocumentRes, error) {
@@ -195,39 +189,6 @@ func (c *Client) sendCreateDocument(ctx context.Context, request *CreateDocument
 		return res, errors.Wrap(err, "encode request")
 	}
 
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, CreateDocumentOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
 	stage = "SendRequest"
 	resp, err := c.cfg.Client.Do(r)
 	if err != nil {
@@ -244,21 +205,21 @@ func (c *Client) sendCreateDocument(ctx context.Context, request *CreateDocument
 	return result, nil
 }
 
-// DeleteDocumentByID invokes deleteDocumentByID operation.
+// DeleteDocument invokes deleteDocument operation.
 //
-// Delete document by ID.
+// Удаление документа по его идентификатору.
 //
-// DELETE /api/docs/{doc_id}
-func (c *Client) DeleteDocumentByID(ctx context.Context, params DeleteDocumentByIDParams) (DeleteDocumentByIDRes, error) {
-	res, err := c.sendDeleteDocumentByID(ctx, params)
+// DELETE /api/docs/{id}
+func (c *Client) DeleteDocument(ctx context.Context, params DeleteDocumentParams) (DeleteDocumentRes, error) {
+	res, err := c.sendDeleteDocument(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendDeleteDocumentByID(ctx context.Context, params DeleteDocumentByIDParams) (res DeleteDocumentByIDRes, err error) {
+func (c *Client) sendDeleteDocument(ctx context.Context, params DeleteDocumentParams) (res DeleteDocumentRes, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("deleteDocumentByID"),
+		otelogen.OperationID("deleteDocument"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.HTTPRouteKey.String("/api/docs/{doc_id}"),
+		semconv.HTTPRouteKey.String("/api/docs/{id}"),
 	}
 
 	// Run stopwatch.
@@ -273,7 +234,7 @@ func (c *Client) sendDeleteDocumentByID(ctx context.Context, params DeleteDocume
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, DeleteDocumentByIDOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, DeleteDocumentOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -293,14 +254,14 @@ func (c *Client) sendDeleteDocumentByID(ctx context.Context, params DeleteDocume
 	var pathParts [2]string
 	pathParts[0] = "/api/docs/"
 	{
-		// Encode "doc_id" parameter.
+		// Encode "id" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "doc_id",
+			Param:   "id",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.DocID))
+			return e.EncodeValue(conv.StringToString(params.ID))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -311,6 +272,24 @@ func (c *Client) sendDeleteDocumentByID(ctx context.Context, params DeleteDocume
 		pathParts[1] = encoded
 	}
 	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "token" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "token",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			return e.EncodeValue(conv.StringToString(params.Token))
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
 
 	stage = "EncodeRequest"
 	r, err := ht.NewRequest(ctx, "DELETE", u)
@@ -318,39 +297,6 @@ func (c *Client) sendDeleteDocumentByID(ctx context.Context, params DeleteDocume
 		return res, errors.Wrap(err, "create request")
 	}
 
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, DeleteDocumentByIDOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
 	stage = "SendRequest"
 	resp, err := c.cfg.Client.Do(r)
 	if err != nil {
@@ -359,7 +305,7 @@ func (c *Client) sendDeleteDocumentByID(ctx context.Context, params DeleteDocume
 	defer resp.Body.Close()
 
 	stage = "DecodeResponse"
-	result, err := decodeDeleteDocumentByIDResponse(resp)
+	result, err := decodeDeleteDocumentResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -367,21 +313,22 @@ func (c *Client) sendDeleteDocumentByID(ctx context.Context, params DeleteDocume
 	return result, nil
 }
 
-// DownloadDocumentByID invokes downloadDocumentByID operation.
+// GetDocument invokes getDocument operation.
 //
-// Download document file by ID.
+// Получение конкретного документа по его
+// идентификатору.
 //
-// GET /api/docs/{doc_id}/download
-func (c *Client) DownloadDocumentByID(ctx context.Context, params DownloadDocumentByIDParams) (DownloadDocumentByIDRes, error) {
-	res, err := c.sendDownloadDocumentByID(ctx, params)
+// GET /api/docs/{id}
+func (c *Client) GetDocument(ctx context.Context, params GetDocumentParams) (GetDocumentRes, error) {
+	res, err := c.sendGetDocument(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendDownloadDocumentByID(ctx context.Context, params DownloadDocumentByIDParams) (res DownloadDocumentByIDRes, err error) {
+func (c *Client) sendGetDocument(ctx context.Context, params GetDocumentParams) (res GetDocumentRes, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("downloadDocumentByID"),
+		otelogen.OperationID("getDocument"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/docs/{doc_id}/download"),
+		semconv.HTTPRouteKey.String("/api/docs/{id}"),
 	}
 
 	// Run stopwatch.
@@ -396,131 +343,7 @@ func (c *Client) sendDownloadDocumentByID(ctx context.Context, params DownloadDo
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, DownloadDocumentByIDOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/docs/"
-	{
-		// Encode "doc_id" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "doc_id",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.DocID))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/download"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, DownloadDocumentByIDOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	defer resp.Body.Close()
-
-	stage = "DecodeResponse"
-	result, err := decodeDownloadDocumentByIDResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// GetDocumentByID invokes getDocumentByID operation.
-//
-// Get document metadata by ID.
-//
-// GET /api/docs/{doc_id}
-func (c *Client) GetDocumentByID(ctx context.Context, params GetDocumentByIDParams) (GetDocumentByIDRes, error) {
-	res, err := c.sendGetDocumentByID(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendGetDocumentByID(ctx context.Context, params GetDocumentByIDParams) (res GetDocumentByIDRes, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("getDocumentByID"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/docs/{doc_id}"),
-	}
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetDocumentByIDOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, GetDocumentOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -540,14 +363,14 @@ func (c *Client) sendGetDocumentByID(ctx context.Context, params GetDocumentByID
 	var pathParts [2]string
 	pathParts[0] = "/api/docs/"
 	{
-		// Encode "doc_id" parameter.
+		// Encode "id" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "doc_id",
+			Param:   "id",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.DocID))
+			return e.EncodeValue(conv.StringToString(params.ID))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -559,43 +382,28 @@ func (c *Client) sendGetDocumentByID(ctx context.Context, params GetDocumentByID
 	}
 	uri.AddPathParts(u, pathParts[:]...)
 
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "token" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "token",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			return e.EncodeValue(conv.StringToString(params.Token))
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
 	stage = "EncodeRequest"
 	r, err := ht.NewRequest(ctx, "GET", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, GetDocumentByIDOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
 	}
 
 	stage = "SendRequest"
@@ -606,7 +414,7 @@ func (c *Client) sendGetDocumentByID(ctx context.Context, params GetDocumentByID
 	defer resp.Body.Close()
 
 	stage = "DecodeResponse"
-	result, err := decodeGetDocumentByIDResponse(resp)
+	result, err := decodeGetDocumentResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -614,21 +422,22 @@ func (c *Client) sendGetDocumentByID(ctx context.Context, params GetDocumentByID
 	return result, nil
 }
 
-// GetDocumentByIDHead invokes getDocumentByIDHead operation.
+// GetDocumentHead invokes getDocumentHead operation.
 //
-// Get document metadata headers by ID (same as GET but without body).
+// HEAD запрос для получения заголовков конкретного
+// документа.
 //
-// HEAD /api/docs/{doc_id}
-func (c *Client) GetDocumentByIDHead(ctx context.Context, params GetDocumentByIDHeadParams) (GetDocumentByIDHeadRes, error) {
-	res, err := c.sendGetDocumentByIDHead(ctx, params)
+// HEAD /api/docs/{id}
+func (c *Client) GetDocumentHead(ctx context.Context, params GetDocumentHeadParams) (GetDocumentHeadRes, error) {
+	res, err := c.sendGetDocumentHead(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendGetDocumentByIDHead(ctx context.Context, params GetDocumentByIDHeadParams) (res GetDocumentByIDHeadRes, err error) {
+func (c *Client) sendGetDocumentHead(ctx context.Context, params GetDocumentHeadParams) (res GetDocumentHeadRes, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("getDocumentByIDHead"),
+		otelogen.OperationID("getDocumentHead"),
 		semconv.HTTPRequestMethodKey.String("HEAD"),
-		semconv.HTTPRouteKey.String("/api/docs/{doc_id}"),
+		semconv.HTTPRouteKey.String("/api/docs/{id}"),
 	}
 
 	// Run stopwatch.
@@ -643,7 +452,7 @@ func (c *Client) sendGetDocumentByIDHead(ctx context.Context, params GetDocument
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetDocumentByIDHeadOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, GetDocumentHeadOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -663,14 +472,14 @@ func (c *Client) sendGetDocumentByIDHead(ctx context.Context, params GetDocument
 	var pathParts [2]string
 	pathParts[0] = "/api/docs/"
 	{
-		// Encode "doc_id" parameter.
+		// Encode "id" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "doc_id",
+			Param:   "id",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.DocID))
+			return e.EncodeValue(conv.StringToString(params.ID))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -681,6 +490,24 @@ func (c *Client) sendGetDocumentByIDHead(ctx context.Context, params GetDocument
 		pathParts[1] = encoded
 	}
 	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "token" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "token",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			return e.EncodeValue(conv.StringToString(params.Token))
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
 
 	stage = "EncodeRequest"
 	r, err := ht.NewRequest(ctx, "HEAD", u)
@@ -688,39 +515,6 @@ func (c *Client) sendGetDocumentByIDHead(ctx context.Context, params GetDocument
 		return res, errors.Wrap(err, "create request")
 	}
 
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, GetDocumentByIDHeadOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
 	stage = "SendRequest"
 	resp, err := c.cfg.Client.Do(r)
 	if err != nil {
@@ -729,7 +523,7 @@ func (c *Client) sendGetDocumentByIDHead(ctx context.Context, params GetDocument
 	defer resp.Body.Close()
 
 	stage = "DecodeResponse"
-	result, err := decodeGetDocumentByIDHeadResponse(resp)
+	result, err := decodeGetDocumentHeadResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -739,7 +533,8 @@ func (c *Client) sendGetDocumentByIDHead(ctx context.Context, params GetDocument
 
 // ListDocuments invokes listDocuments operation.
 //
-// Get paginated list of user documents.
+// Получение списка документов с возможностью
+// фильтрации.
 //
 // GET /api/docs
 func (c *Client) ListDocuments(ctx context.Context, params ListDocumentsParams) (ListDocumentsRes, error) {
@@ -790,16 +585,30 @@ func (c *Client) sendListDocuments(ctx context.Context, params ListDocumentsPara
 	stage = "EncodeQueryParams"
 	q := uri.NewQueryEncoder()
 	{
-		// Encode "page" parameter.
+		// Encode "token" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page",
+			Name:    "token",
 			Style:   uri.QueryStyleForm,
 			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Page.Get(); ok {
-				return e.EncodeValue(conv.IntToString(val))
+			return e.EncodeValue(conv.StringToString(params.Token))
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "login" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "login",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Login.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
 			}
 			return nil
 		}); err != nil {
@@ -807,15 +616,49 @@ func (c *Client) sendListDocuments(ctx context.Context, params ListDocumentsPara
 		}
 	}
 	{
-		// Encode "per_page" parameter.
+		// Encode "key" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "per_page",
+			Name:    "key",
 			Style:   uri.QueryStyleForm,
 			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.PerPage.Get(); ok {
+			if val, ok := params.Key.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "value" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "value",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Value.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "limit" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "limit",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Limit.Get(); ok {
 				return e.EncodeValue(conv.IntToString(val))
 			}
 			return nil
@@ -829,39 +672,6 @@ func (c *Client) sendListDocuments(ctx context.Context, params ListDocumentsPara
 	r, err := ht.NewRequest(ctx, "GET", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListDocumentsOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
 	}
 
 	stage = "SendRequest"
@@ -882,7 +692,7 @@ func (c *Client) sendListDocuments(ctx context.Context, params ListDocumentsPara
 
 // ListDocumentsHead invokes listDocumentsHead operation.
 //
-// Get headers for paginated list of user documents (same as GET but without body).
+// HEAD запрос для получения заголовков списка документов.
 //
 // HEAD /api/docs
 func (c *Client) ListDocumentsHead(ctx context.Context, params ListDocumentsHeadParams) (ListDocumentsHeadRes, error) {
@@ -933,16 +743,30 @@ func (c *Client) sendListDocumentsHead(ctx context.Context, params ListDocuments
 	stage = "EncodeQueryParams"
 	q := uri.NewQueryEncoder()
 	{
-		// Encode "page" parameter.
+		// Encode "token" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page",
+			Name:    "token",
 			Style:   uri.QueryStyleForm,
 			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Page.Get(); ok {
-				return e.EncodeValue(conv.IntToString(val))
+			return e.EncodeValue(conv.StringToString(params.Token))
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "login" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "login",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Login.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
 			}
 			return nil
 		}); err != nil {
@@ -950,15 +774,49 @@ func (c *Client) sendListDocumentsHead(ctx context.Context, params ListDocuments
 		}
 	}
 	{
-		// Encode "per_page" parameter.
+		// Encode "key" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "per_page",
+			Name:    "key",
 			Style:   uri.QueryStyleForm,
 			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.PerPage.Get(); ok {
+			if val, ok := params.Key.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "value" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "value",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Value.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "limit" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "limit",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Limit.Get(); ok {
 				return e.EncodeValue(conv.IntToString(val))
 			}
 			return nil
@@ -972,39 +830,6 @@ func (c *Client) sendListDocumentsHead(ctx context.Context, params ListDocuments
 	r, err := ht.NewRequest(ctx, "HEAD", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListDocumentsHeadOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
 	}
 
 	stage = "SendRequest"
@@ -1025,9 +850,9 @@ func (c *Client) sendListDocumentsHead(ctx context.Context, params ListDocuments
 
 // LoginUser invokes loginUser operation.
 //
-// Authenticate user and get access token.
+// Получение токена авторизации по логину и паролю.
 //
-// POST /api/auth/login
+// POST /api/auth
 func (c *Client) LoginUser(ctx context.Context, request *LoginRequest) (LoginUserRes, error) {
 	res, err := c.sendLoginUser(ctx, request)
 	return res, err
@@ -1037,7 +862,7 @@ func (c *Client) sendLoginUser(ctx context.Context, request *LoginRequest) (res 
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("loginUser"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/auth/login"),
+		semconv.HTTPRouteKey.String("/api/auth"),
 	}
 
 	// Run stopwatch.
@@ -1070,7 +895,7 @@ func (c *Client) sendLoginUser(ctx context.Context, request *LoginRequest) (res 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [1]string
-	pathParts[0] = "/api/auth/login"
+	pathParts[0] = "/api/auth"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -1100,19 +925,19 @@ func (c *Client) sendLoginUser(ctx context.Context, request *LoginRequest) (res 
 
 // LogoutUser invokes logoutUser operation.
 //
-// Logout user and invalidate token.
+// Завершение авторизованной сессии работы.
 //
-// POST /api/auth/logout
-func (c *Client) LogoutUser(ctx context.Context) (LogoutUserRes, error) {
-	res, err := c.sendLogoutUser(ctx)
+// DELETE /api/auth/{token}
+func (c *Client) LogoutUser(ctx context.Context, params LogoutUserParams) (LogoutUserRes, error) {
+	res, err := c.sendLogoutUser(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendLogoutUser(ctx context.Context) (res LogoutUserRes, err error) {
+func (c *Client) sendLogoutUser(ctx context.Context, params LogoutUserParams) (res LogoutUserRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("logoutUser"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/auth/logout"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.HTTPRouteKey.String("/api/auth/{token}"),
 	}
 
 	// Run stopwatch.
@@ -1144,47 +969,32 @@ func (c *Client) sendLogoutUser(ctx context.Context) (res LogoutUserRes, err err
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/auth/logout"
+	var pathParts [2]string
+	pathParts[0] = "/api/auth/"
+	{
+		// Encode "token" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "token",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Token))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
+	r, err := ht.NewRequest(ctx, "DELETE", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, LogoutUserOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
 	}
 
 	stage = "SendRequest"
@@ -1205,9 +1015,9 @@ func (c *Client) sendLogoutUser(ctx context.Context) (res LogoutUserRes, err err
 
 // RegisterUser invokes registerUser operation.
 //
-// Create a new user account.
+// Создание нового пользователя с логином и паролем.
 //
-// POST /api/auth/register
+// POST /api/register
 func (c *Client) RegisterUser(ctx context.Context, request *RegisterRequest) (RegisterUserRes, error) {
 	res, err := c.sendRegisterUser(ctx, request)
 	return res, err
@@ -1217,7 +1027,7 @@ func (c *Client) sendRegisterUser(ctx context.Context, request *RegisterRequest)
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("registerUser"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/auth/register"),
+		semconv.HTTPRouteKey.String("/api/register"),
 	}
 
 	// Run stopwatch.
@@ -1250,7 +1060,7 @@ func (c *Client) sendRegisterUser(ctx context.Context, request *RegisterRequest)
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [1]string
-	pathParts[0] = "/api/auth/register"
+	pathParts[0] = "/api/register"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
