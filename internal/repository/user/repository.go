@@ -1,8 +1,8 @@
 package user
 
 import (
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/Masterminds/squirrel"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // Repository - репозиторий для работы с пользователями и токенами

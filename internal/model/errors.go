@@ -22,12 +22,12 @@ var (
 	ErrLoginInvalidChars  = errors.New("login contains invalid characters")
 	ErrLoginAlreadyExists = errors.New("login already exists")
 
-	ErrPasswordTooShort     = errors.New("password too short")
-	ErrPasswordTooLong      = errors.New("password too long")
-	ErrPasswordNoUppercase  = errors.New("password must contain uppercase letter")
-	ErrPasswordNoLowercase  = errors.New("password must contain lowercase letter")
-	ErrPasswordNoDigit      = errors.New("password must contain digit")
-	ErrPasswordNoSpecial    = errors.New("password must contain special character")
+	ErrPasswordTooShort    = errors.New("password too short")
+	ErrPasswordTooLong     = errors.New("password too long")
+	ErrPasswordNoUppercase = errors.New("password must contain uppercase letter")
+	ErrPasswordNoLowercase = errors.New("password must contain lowercase letter")
+	ErrPasswordNoDigit     = errors.New("password must contain digit")
+	ErrPasswordNoSpecial   = errors.New("password must contain special character")
 
 	// Ошибки валидации документов
 	ErrDocumentNameEmpty    = errors.New("document name is empty")
@@ -37,7 +37,7 @@ var (
 	ErrDocumentInvalidGrant = errors.New("invalid grant user")
 
 	// Ошибки прав доступа
-	ErrAccessDenied     = errors.New("access denied")
+	ErrAccessDenied      = errors.New("access denied")
 	ErrOwnershipRequired = errors.New("only document owner can perform this action")
 
 	// Общие ошибки валидации
