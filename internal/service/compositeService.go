@@ -20,6 +20,8 @@ type DocsService interface {
 
 	// Получение документов для пользователя
 	GetDocumentsForUser(ctx context.Context, requestUserID, targetUserID string) ([]model.Document, error)
+	// Проверка прав доступа к документу
+	HasAccessToDocument(ctx context.Context, userID, documentID string) (bool, error)
 }
 
 // AuthService - интерфейс сервиса авторизации
@@ -66,6 +68,10 @@ func (s *compositeService) DeleteDocument(ctx context.Context, id string) error 
 
 func (s *compositeService) GetDocumentsForUser(ctx context.Context, requestUserID, targetUserID string) ([]model.Document, error) {
 	return s.docsService.GetDocumentsForUser(ctx, requestUserID, targetUserID)
+}
+
+func (s *compositeService) HasAccessToDocument(ctx context.Context, userID, documentID string) (bool, error) {
+	return s.docsService.HasAccessToDocument(ctx, userID, documentID)
 }
 
 // Методы для работы с аутентификацией (делегируем в authService)

@@ -12,7 +12,7 @@ import (
 	"syscall"
 	"time"
 
-	fileserverAPI "github.com/NarthurN/FileServerService/internal/api/docs"
+	fileserverAPI "github.com/NarthurN/FileServerService/internal/api/v1"
 	"github.com/NarthurN/FileServerService/internal/config"
 	"github.com/NarthurN/FileServerService/internal/database"
 	"github.com/NarthurN/FileServerService/internal/database/migrator"

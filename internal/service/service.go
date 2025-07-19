@@ -16,6 +16,8 @@ type FileServerService interface {
 
 	// Получение документов для пользователя
 	GetDocumentsForUser(ctx context.Context, requestUserID, targetUserID string) ([]model.Document, error)
+	// Проверка прав доступа к документу
+	HasAccessToDocument(ctx context.Context, userID, documentID string) (bool, error)
 
 	// Регистрация и аутентификация
 	RegisterUser(ctx context.Context, adminToken, login, password string) (model.User, error)
