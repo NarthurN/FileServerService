@@ -6,17 +6,20 @@ import (
 	"log"
 	"strings"
 
+	"github.com/NarthurN/FileServerService/internal/cache"
 	"github.com/NarthurN/FileServerService/internal/model"
 	"github.com/NarthurN/FileServerService/internal/repository"
 )
 
 type service struct {
-	repo repository.FileServerRepository
+	repo         repository.FileServerRepository
+	cacheManager *cache.CacheManager
 }
 
-func NewService(repo repository.FileServerRepository) *service {
+func NewService(repo repository.FileServerRepository, cacheManager *cache.CacheManager) *service {
 	return &service{
-		repo: repo,
+		repo:         repo,
+		cacheManager: cacheManager,
 	}
 }
 

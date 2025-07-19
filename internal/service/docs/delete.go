@@ -27,6 +27,14 @@ func (s *service) DeleteDocument(ctx context.Context, id string) error {
 		return fmt.Errorf("failed to delete document: %w", err)
 	}
 
-	log.Printf("ServiceLayer: Документ %s (%s) успешно удален", doc.Name, id)
+	// Инвалидируем кэш для документа и пользователя
+	if err := s.cacheManager.InvalidateDocument(ctx, id); err != nil {
+		log.Printf("ServiceLayer: Ошибка инвалидации кэша документа: %v", err)
+	}
+	if err := s.cacheManager.InvalidateUserDocuments(ctx, doc.UserID); err != nil {
+		log.Printf("ServiceLayer: Ошибка инвалидации кэша документов пользователя: %v", err)
+	}
+
+	log.Printf("ServiceLayer: Документ %s (%s) успешно удален, кэш инвалидирован", doc.Name, id)
 	return nil
 }

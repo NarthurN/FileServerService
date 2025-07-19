@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 
+	"github.com/NarthurN/FileServerService/internal/cache"
 	"github.com/NarthurN/FileServerService/internal/config"
 	"github.com/NarthurN/FileServerService/internal/model"
 	"github.com/NarthurN/FileServerService/internal/repository"
@@ -45,10 +46,10 @@ type compositeService struct {
 	docsService DocsService
 }
 
-func NewCompositeService(repo repository.FileServerRepository, cfg *config.Config) FileServerService {
+func NewCompositeService(repo repository.FileServerRepository, cfg *config.Config, cacheManager *cache.CacheManager) FileServerService {
 	return &compositeService{
 		authService: auth.NewService(repo, cfg),
-		docsService: docs.NewService(repo),
+		docsService: docs.NewService(repo, cacheManager),
 	}
 }
 

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	fileserverAPI "github.com/NarthurN/FileServerService/internal/api/v1"
+	"github.com/NarthurN/FileServerService/internal/cache"
 	"github.com/NarthurN/FileServerService/internal/config"
 	"github.com/NarthurN/FileServerService/internal/database"
 	"github.com/NarthurN/FileServerService/internal/database/migrator"
@@ -31,6 +32,13 @@ func main() {
 		return
 	}
 	log.Printf("🟢 Конфигурация загружена")
+
+	// Создание кэш-менеджера
+	cacheManager, err := cache.NewCacheManager(1000) // Емкость кэша 1000 элементов
+	if err != nil {
+		log.Fatal("🚨 ошибка создания кэш-менеджера:", err)
+	}
+	log.Printf("🟢 Кэш-менеджер создан")
 
 	// Создание SQL соединения
 	sqlDB, err := database.NewSQLDB(cfg.Database)
@@ -59,7 +67,7 @@ func main() {
 	repo := fileserverCompositeRepo.NewCompositeRepository(pool)
 	log.Printf("🟢 Репозиторий создан")
 	// Создание сервиса
-	service := fileserverService.NewCompositeService(repo, cfg)
+	service := fileserverService.NewCompositeService(repo, cfg, cacheManager)
 	log.Printf("🟢 Сервис создан")
 	// Создание API
 	api := fileserverAPI.NewAPI(service)

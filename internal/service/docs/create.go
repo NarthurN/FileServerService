@@ -55,6 +55,11 @@ func (s *service) CreateDocument(ctx context.Context, doc buisnesModel.Document)
 		return buisnesModel.Document{}, fmt.Errorf("failed to create document: %w", err)
 	}
 
-	log.Printf("ServiceLayer: Документ %s успешно создан с ID %s", createdDoc.Name, createdDoc.ID)
+	// Инвалидируем кэш для пользователя
+	if err := s.cacheManager.InvalidateUserDocuments(ctx, doc.UserID); err != nil {
+		log.Printf("ServiceLayer: Ошибка инвалидации кэша документов пользователя: %v", err)
+	}
+
+	log.Printf("ServiceLayer: Документ %s успешно создан с ID %s, кэш инвалидирован", createdDoc.Name, createdDoc.ID)
 	return createdDoc, nil
 }

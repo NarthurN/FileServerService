@@ -16,13 +16,27 @@ func (s *service) GetDocument(ctx context.Context, id string) (model.Document, e
 		return model.Document{}, fmt.Errorf("document ID is required")
 	}
 
+	// Пытаемся получить из кэша
+	if cachedDoc, found := s.cacheManager.GetDocument(ctx, id); found {
+		if doc, ok := cachedDoc.(model.Document); ok {
+			log.Printf("ServiceLayer: Документ %s найден в кэше", id)
+			return doc, nil
+		}
+	}
+
+	// Если нет в кэше, получаем из БД
 	doc, err := s.repo.GetDocument(ctx, id)
 	if err != nil {
 		log.Printf("ServiceLayer: Документ %s не найден: %v", id, err)
 		return model.Document{}, fmt.Errorf("document not found: %w", err)
 	}
 
-	log.Printf("ServiceLayer: Документ %s найден", id)
+	// Сохраняем в кэш
+	if err := s.cacheManager.SetDocument(ctx, id, doc); err != nil {
+		log.Printf("ServiceLayer: Ошибка сохранения документа %s в кэш: %v", id, err)
+	}
+
+	log.Printf("ServiceLayer: Документ %s найден и сохранен в кэш", id)
 	return doc, nil
 }
 
