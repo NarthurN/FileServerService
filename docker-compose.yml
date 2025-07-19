@@ -1,15 +1,13 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:15-alpine
     container_name: docs-postgres
     environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-docs_server}
     ports:
-      - "${DB_PORT}:5432"
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./db/init:/docker-entrypoint-initdb.d
@@ -17,13 +15,49 @@ services:
       - docs-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-docs_server}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
+  fileserver:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fileserver-app
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER:-postgres}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - DB_NAME=${POSTGRES_DB:-docs_server}
+      - DB_SSL_MODE=disable
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=8080
+      - ADMIN_TOKEN=${ADMIN_TOKEN:-super-secret-admin-token-for-user-registration-2024}
+      - TOKEN_LIFETIME_HOURS=${TOKEN_LIFETIME_HOURS:-24}
+      - JWT_SECRET=${JWT_SECRET:-your-very-long-and-secure-jwt-secret-key-here}
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+    volumes:
+      - files_storage:/app/bin/storage
+    networks:
+      - docs-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/docs"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
 volumes:
   postgres_data:
+    driver: local
+  files_storage:
     driver: local
 
 networks:

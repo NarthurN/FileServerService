@@ -40,9 +40,9 @@ type AuthConfig struct {
 }
 
 func Load() (*Config, error) {
+	// Пытаемся загрузить .env файл, но не возвращаем ошибку если его нет
 	if err := godotenv.Load(); err != nil {
-		log.Println("🚨 Файл .env не найден:", err)
-		return nil, err
+		log.Println("ℹ️ Файл .env не найден, используем переменные окружения:", err)
 	}
 
 	return &Config{
