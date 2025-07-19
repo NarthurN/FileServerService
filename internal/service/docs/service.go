@@ -3,6 +3,7 @@ package docs
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/NarthurN/FileServerService/internal/model"
@@ -109,6 +110,7 @@ func (s *service) hasAccessToDocument(doc model.Document, userLogin string) bool
 func (s *service) sortDocuments(docs []model.Document) []model.Document {
 	// Согласно заданию - сортировка по имени и дате создания
 	// Реализуем простую сортировку
+	log.Printf("ServiceLayer: Сортировка %d документов", len(docs))
 
 	if len(docs) <= 1 {
 		return docs

@@ -24,52 +24,53 @@ import (
 )
 
 func main() {
-	// Контекст для миграций
-	ctx := context.Background()
-
 	// Загрузка конфигурации
 	cfg, err := config.Load()
 	if err != nil {
 		log.Printf("🚨 ошибка загрузки конфигурации: %v", err)
 		return
 	}
+	log.Printf("🟢 Конфигурация загружена")
 
 	// Создание SQL соединения
 	sqlDB, err := database.NewSQLDB(cfg.Database)
 	if err != nil {
 		log.Fatal("🚨 ошибка создания SQL соединения:", err)
 	}
+	log.Printf("🟢 SQL соединение создано")
 	defer sqlDB.Close()
 
+	// Контекст для миграций
+	ctx := context.Background()
 	// Применение миграций
 	migrator := migrator.NewMigrator(sqlDB)
 	if err := migrator.Up(ctx); err != nil {
 		log.Fatal("🚨 ошибка применения миграций:", err)
 	}
-
+	log.Printf("🟢 Миграции применены")
 	// Создание пула соединений
 	pool, err := database.NewPool(cfg.Database)
 	if err != nil {
 		log.Printf("🚨 ошибка создания пула соединений: %v", err)
 		return
 	}
-
+	log.Printf("🟢 Пул соединений создан")
 	// Создание репозитория
 	repo := fileserverCompositeRepo.NewCompositeRepository(pool)
-
+	log.Printf("🟢 Репозиторий создан")
 	// Создание сервиса
 	service := fileserverService.NewCompositeService(repo, cfg)
-
+	log.Printf("🟢 Сервис создан")
 	// Создание API
 	api := fileserverAPI.NewAPI(service)
-
+	log.Printf("🟢 API создан")
 	// Создание сервера
 	fileServer, err := fileserverV1.NewServer(api)
 	if err != nil {
 		log.Printf("🚨 ошибка создания сервера: %v", err)
 		return
 	}
-
+	log.Printf("🟢 Сервер создан")
 	r := chi.NewRouter()
 
 	r.Use(middleware.Logger)
@@ -100,7 +101,7 @@ func main() {
 		IdleTimeout:       120 * time.Second,
 		MaxHeaderBytes:    32 << 20, // 32MB для файлов
 	}
-
+	log.Printf("🟢 HTTP сервер создан")
 	go func() {
 		log.Printf("🚀 HTTP сервер запущен на порту %s", strconv.Itoa(cfg.Server.Port))
 		err := server.ListenAndServe()

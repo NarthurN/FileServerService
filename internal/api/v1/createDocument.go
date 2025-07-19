@@ -43,7 +43,7 @@ func (a *api) CreateDocument(ctx context.Context, req *fileserverV1.CreateDocume
 		}, nil
 	}
 
-    docID := uuid.New().String()
+	docID := uuid.New().String()
 
 	// Создание файла
 	var filePath string
@@ -94,14 +94,15 @@ func (a *api) CreateDocument(ctx context.Context, req *fileserverV1.CreateDocume
 	}
 
 	doc := model.Document{
-		ID: docID,
-		UserID: user.ID,
-		Name: req.Meta.Name,
-		MimeType: req.Meta.Mime,
-		IsFile: req.Meta.File,
-		IsPublic: req.Meta.Public,
-		JSONData: nil,
-		Grants: req.Meta.Grant,
+		ID:        docID,
+		UserID:    user.ID,
+		Name:      req.Meta.Name,
+		MimeType:  req.Meta.Mime,
+		FilePath:  filePath,
+		IsFile:    req.Meta.File,
+		IsPublic:  req.Meta.Public,
+		JSONData:  nil,
+		Grants:    req.Meta.Grant,
 		CreatedAt: time.Now().UTC(),
 		UpdatedAt: time.Now().UTC(),
 	}

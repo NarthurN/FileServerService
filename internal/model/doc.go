@@ -3,7 +3,8 @@ package model
 import (
 	"database/sql/driver"
 	"encoding/json"
-	"errors"
+	"fmt"
+	"log"
 	"time"
 )
 
@@ -35,17 +36,40 @@ func (j JSONData) Value() (driver.Value, error) {
 
 // Scan реализует интерфейс sql.Scanner для чтения из БД
 func (j *JSONData) Scan(value any) error {
+	log.Printf("JSONData.Scan: получено значение типа %T: %v", value, value)
+
 	if value == nil {
 		*j = nil
+		log.Printf("JSONData.Scan: значение nil, устанавливаем пустое")
 		return nil
 	}
 
-	bytes, ok := value.([]byte)
-	if !ok {
-		return errors.New("cannot scan non-[]byte value into JSONData")
-	}
+	// Попробуем разные типы
+	switch v := value.(type) {
+	case []byte:
+		log.Printf("JSONData.Scan: обрабатываем []byte длиной %d", len(v))
+		if len(v) == 0 {
+			*j = make(JSONData)
+			return nil
+		}
+		return json.Unmarshal(v, j)
 
-	return json.Unmarshal(bytes, j)
+	case string:
+		log.Printf("JSONData.Scan: обрабатываем string: %s", v)
+		if v == "" {
+			*j = make(JSONData)
+			return nil
+		}
+		return json.Unmarshal([]byte(v), j)
+
+	case nil:
+		*j = nil
+		return nil
+
+	default:
+		log.Printf("JSONData.Scan: неизвестный тип %T", value)
+		return fmt.Errorf("cannot scan %T into JSONData", value)
+	}
 }
 
 // StringArray - тип для хранения массива строк
@@ -61,17 +85,40 @@ func (s StringArray) Value() (driver.Value, error) {
 
 // Scan реализует интерфейс sql.Scanner для чтения из БД
 func (s *StringArray) Scan(value any) error {
+	log.Printf("StringArray.Scan: получено значение типа %T: %v", value, value)
+
 	if value == nil {
 		*s = nil
+		log.Printf("StringArray.Scan: значение nil, устанавливаем пустое")
 		return nil
 	}
 
-	bytes, ok := value.([]byte)
-	if !ok {
-		return errors.New("cannot scan non-[]byte value into StringArray")
-	}
+	// Попробуем разные типы
+	switch v := value.(type) {
+	case []byte:
+		log.Printf("StringArray.Scan: обрабатываем []byte длиной %d", len(v))
+		if len(v) == 0 {
+			*s = make(StringArray, 0)
+			return nil
+		}
+		return json.Unmarshal(v, s)
 
-	return json.Unmarshal(bytes, s)
+	case string:
+		log.Printf("StringArray.Scan: обрабатываем string: %s", v)
+		if v == "" || v == "[]" {
+			*s = make(StringArray, 0)
+			return nil
+		}
+		return json.Unmarshal([]byte(v), s)
+
+	case nil:
+		*s = nil
+		return nil
+
+	default:
+		log.Printf("StringArray.Scan: неизвестный тип %T", value)
+		return fmt.Errorf("cannot scan %T into StringArray", value)
+	}
 }
 
 // MarshalJSON кастомная сериализация для времени в нужном формате

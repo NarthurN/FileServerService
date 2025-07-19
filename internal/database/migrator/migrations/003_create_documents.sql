@@ -13,7 +13,7 @@ CREATE TABLE documents (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Индексы для производительности (критично для задания!)
+-- Индексы для производительности
 CREATE INDEX idx_documents_user_id ON documents(user_id);
 CREATE INDEX idx_documents_created_at ON documents(created_at);
 CREATE INDEX idx_documents_name ON documents(name);

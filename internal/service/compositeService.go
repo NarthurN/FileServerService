@@ -35,6 +35,9 @@ type AuthService interface {
 	// Управление токенами
 	RefreshToken(ctx context.Context, oldToken string) (string, error)
 	GetUserByToken(ctx context.Context, tokenValue string) (model.User, error)
+
+	// Получение пользователя по логину
+	GetUserByLogin(ctx context.Context, login string) (model.User, error)
 }
 
 type compositeService struct {
@@ -97,4 +100,8 @@ func (s *compositeService) RefreshToken(ctx context.Context, oldToken string) (s
 
 func (s *compositeService) GetUserByToken(ctx context.Context, tokenValue string) (model.User, error) {
 	return s.authService.GetUserByToken(ctx, tokenValue)
+}
+
+func (s *compositeService) GetUserByLogin(ctx context.Context, login string) (model.User, error) {
+	return s.authService.GetUserByLogin(ctx, login)
 }

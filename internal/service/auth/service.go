@@ -163,6 +163,12 @@ func (s *Service) getTokenLifetime() time.Duration {
 	return 24 * time.Hour
 }
 
+// GetUserByLogin - получение пользователя по логину
+func (s *Service) GetUserByLogin(ctx context.Context, login string) (model.User, error) {
+	normalizedLogin := strings.ToLower(strings.TrimSpace(login))
+	return s.repo.GetUserByLogin(ctx, normalizedLogin)
+}
+
 func (s *Service) cleanupOldTokens(ctx context.Context, userID string) error {
 	// Можно настроить: деактивировать все старые токены или оставить несколько активных
 	return s.repo.DeactivateUserTokens(ctx, userID)

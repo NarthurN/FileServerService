@@ -32,20 +32,27 @@ func (s *service) GetDocumentsForUser(ctx context.Context, requestUserID, target
 
 	// Если запрашивает свои документы
 	if requestUserID == targetUserID {
+		log.Printf("ServiceLayer: Запрос собственных документов")
 		return s.GetListDocuments(ctx, targetUserID)
 	}
 
 	// Получаем все документы целевого пользователя
+	log.Printf("ServiceLayer: Получение документов целевого пользователя %s", targetUserID)
 	allDocs, err := s.repo.GetListDocuments(ctx, targetUserID)
 	if err != nil {
+		log.Printf("ServiceLayer: Ошибка получения документов целевого пользователя: %v", err)
 		return nil, fmt.Errorf("failed to get target user documents: %w", err)
 	}
+	log.Printf("ServiceLayer: Найдено %d документов целевого пользователя", len(allDocs))
 
 	// Получаем пользователя-запросчика для проверки его логина
+	log.Printf("ServiceLayer: Получение пользователя-запросчика %s", requestUserID)
 	requestUser, err := s.repo.GetUserByID(ctx, requestUserID)
 	if err != nil {
+		log.Printf("ServiceLayer: Ошибка получения пользователя-запросчика: %v", err)
 		return nil, fmt.Errorf("failed to get request user: %w", err)
 	}
+	log.Printf("ServiceLayer: Пользователь-запросчик найден: %s", requestUser.Login)
 
 	// Фильтруем документы: публичные + те, к которым есть доступ
 	var accessibleDocs []model.Document

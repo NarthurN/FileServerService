@@ -28,4 +28,7 @@ type FileServerService interface {
 	// Управление токенами
 	RefreshToken(ctx context.Context, oldToken string) (string, error)
 	GetUserByToken(ctx context.Context, tokenValue string) (model.User, error)
+
+	// Получение пользователя по логину
+	GetUserByLogin(ctx context.Context, login string) (model.User, error)
 }

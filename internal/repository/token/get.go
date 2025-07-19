@@ -5,7 +5,6 @@ import (
 
 	"github.com/Masterminds/squirrel"
 	"github.com/NarthurN/FileServerService/internal/model"
-	buisnesModel "github.com/NarthurN/FileServerService/internal/model"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -33,7 +32,7 @@ func (r *Repository) GetTokenByValue(ctx context.Context, tokenValue string) (mo
 		&token.IsActive,
 	); err != nil {
 		if err == pgx.ErrNoRows {
-			return model.Token{}, buisnesModel.ErrNotFound
+			return model.Token{}, model.ErrNotFound
 		}
 		return model.Token{}, err
 	}

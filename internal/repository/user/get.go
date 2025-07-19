@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"log"
 
 	"github.com/Masterminds/squirrel"
 	"github.com/NarthurN/FileServerService/internal/model"
@@ -38,11 +39,14 @@ func (r *Repository) GetUserByLogin(ctx context.Context, login string) (model.Us
 
 // GetUserByID - получение пользователя по ID
 func (r *Repository) GetUserByID(ctx context.Context, userID string) (model.User, error) {
+	log.Printf("Repository: Получение пользователя по ID %s", userID)
+
 	query, args, err := r.sb.Select("id", "login", "password_hash", "created_at", "updated_at").
 		From("users").
 		Where(squirrel.Eq{"id": userID}).
 		ToSql()
 	if err != nil {
+		log.Printf("Repository: Ошибка создания SQL запроса: %v", err)
 		return model.User{}, err
 	}
 
@@ -55,10 +59,13 @@ func (r *Repository) GetUserByID(ctx context.Context, userID string) (model.User
 		&user.UpdatedAt,
 	); err != nil {
 		if err == pgx.ErrNoRows {
+			log.Printf("Repository: Пользователь %s не найден", userID)
 			return model.User{}, buisnesModel.ErrNotFound
 		}
+		log.Printf("Repository: Ошибка сканирования пользователя: %v", err)
 		return model.User{}, err
 	}
 
+	log.Printf("Repository: Пользователь %s найден: %s", userID, user.Login)
 	return user, nil
 }

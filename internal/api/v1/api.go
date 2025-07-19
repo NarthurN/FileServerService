@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/NarthurN/FileServerService/internal/model"
 	"github.com/NarthurN/FileServerService/internal/service"
@@ -38,11 +39,16 @@ func (a *api) validateToken(ctx context.Context, token string) (model.User, erro
 }
 
 // getUserByLogin - получение пользователя по логину
-func (a *api) getUserByLogin(_ context.Context, _ string) (model.User, error) {
-	// Поскольку у нас нет прямого метода в authService, используем обходной путь
-	// Можно добавить метод GetUserByLogin в AuthService или использовать repository напрямую
-	// Пока оставляем заглушку
-	return model.User{}, fmt.Errorf("method not implemented")
+func (a *api) getUserByLogin(ctx context.Context, login string) (model.User, error) {
+	log.Printf("API: Поиск пользователя по логину: %s", login)
+	// Используем сервис для получения пользователя по логину
+	user, err := a.service.GetUserByLogin(ctx, login)
+	if err != nil {
+		log.Printf("API: Пользователь %s не найден: %v", login, err)
+		return model.User{}, fmt.Errorf("user not found: %w", err)
+	}
+	log.Printf("API: Пользователь %s найден, ID: %s", login, user.ID)
+	return user, nil
 }
 
 // filterDocuments - фильтрация документов по ключу и значению
